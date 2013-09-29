@@ -827,6 +827,7 @@
                 if ($rs !== false) {
                     $row = mysql_fetch_array($rs);
                     $thread_id = $row["thread_id"];
+                    api_item_property_update($c_info,'forum_thread',$thread_id,'ForumthreadVisible',$user_id);
                     // Finally insert new post, calling setForumPost.
                     return self::setForumPost($course_code, $thread_id, $post_title, $post_text);
                 }
