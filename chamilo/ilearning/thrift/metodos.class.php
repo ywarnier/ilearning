@@ -1335,7 +1335,7 @@
             global $ruta_web;
 
             // Valid extensions
-            $lista_extensiones = array('htm','jpg','gif','html','png','xls','doc','ppt','pdf','htm','key','pages','numbers');
+            $lista_extensiones = array('htm','jpg','gif','html','htm','png','xls','xlsx','doc','docx','ppt','pptx','pdf','key','pages','numbers','csv','svg','mp3','mp4','ogg','oga','ogv');
             // Crap folders... Nothing important there.
             $lista_folders = array('audio','images','flash','HotPotatoes_files','css');
             // Init Vars
