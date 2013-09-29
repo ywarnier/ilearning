@@ -1113,7 +1113,8 @@
             if (IsUserAllowed($course_code)) {
                 $c_info = api_get_course_info($course_code);
                 $cid = $c_info['real_id'];
-                $sql = "select survey_id,title,subtitle,DATEDIFF(CURDATE(),avail_from) as inicio, DATEDIFF(CURDATE(),avail_till) as fin, ".tableName($course_code,'survey_invitation').".answered  from ".tableName($course_code,'survey')." s, ".tableName($course_code,'survey_invitation')." si where s.c_id = $cid AND survey_code=code and user=" . $user_id;
+                $sql = "select survey_id,title,subtitle,DATEDIFF(CURDATE(),avail_from) as inicio, DATEDIFF(CURDATE(),avail_till) as fin, si.answered ".
+                    " from ".tableName($course_code,'survey')." s, ".tableName($course_code,'survey_invitation')." si where s.c_id = $cid AND survey_code=code and user=" . $user_id;
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
