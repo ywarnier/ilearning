@@ -366,6 +366,7 @@
                     $course->course_language = $row["course_language"];
                     $course->title = $row["title"];
                     $course->coursedescription = $row["description"];
+                    $course->id = $row['id'];
 
                     // Look at ff, if it is a positive value the course subscription has expired.
                     $course->active = 1;
@@ -1760,6 +1761,17 @@
         } else {
             return false;
         }
+    }
+    /**
+     * Get a course ID (int) from the course code, as the IOS app uses the
+     * code everywhere and Chamilo changed to int IDs since 1.9.0
+     * @param string Course code
+     * @return int Course ID
+     */
+    function GetCourseIdFromCode($course_code) {
+        $course = api_get_course_info($course_code);
+        if ($course == false) { return false; }
+        return $course['id'];
     }
 
     ?>
