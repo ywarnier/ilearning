@@ -159,7 +159,8 @@
             global $user_id;
             global $db_videomodel;
             $course_content = array();
-            
+            $cid = $this->GetCourseIdFromCode($course_code);
+
             if (IsUserAllowed($course_code)) {
                 // first, we login.
                 $login = self::loginCourse($course_code);
@@ -181,7 +182,7 @@
                     }
                 }
                 // Exams. Is a quiz that was inserted on lp_item. Normaly with visibility=0 on quiz tool.
-                $sql = "select count(id) as quiz from ".tableName($course_code,'lp_item')." where item_type='quiz'";
+                $sql = "select count(id) as quiz from ".tableName($course_code,'lp_item')." where c_id = $cid AND item_type='quiz'";
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
@@ -194,7 +195,7 @@
                 $course_content[] = 3;
                 
                 // Other tools. Look for visibility status on course.
-                $sql = "select name from ".tableName($course_code,'tool')." where visibility=1 and admin=0 order by id";
+                $sql = "select name from ".tableName($course_code,'tool')." where c_id = $cid AND visibility=1 and admin=0 order by id";
                 $rs = mysql_query($sql,$conn);
                 while ($row = mysql_fetch_array($rs)) {
                     switch ($row["name"]) {
@@ -259,13 +260,14 @@
             global $user_id;
             global $db_videomodel;
             $course_content = array();
+            $cid = $this->GetCourseIdFromCode($course_code);
             if (IsUserAllowed($course_code)) {
                 // first, we login.
                 
                 $login = self::loginCourse($course_code);
                 
                 // Exams. Is a quiz that was inserted on lp_item. Normaly with visibility=0 on quiz tool.
-                $sql = "select count(id) as quiz from ".tableName($course_code,'quiz')." where feedback_type = 2";
+                $sql = "select count(id) as quiz from ".tableName($course_code,'quiz')." where c_id = $cid AND feedback_type = 2";
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
@@ -278,7 +280,7 @@
                 //$course_content[] = 3;
                 
                 // Other tools. Look for visibility status on course.
-                $sql = "select name from ".tableName($course_code,'tool')." where visibility=1 and admin=0 order by id";
+                $sql = "select name from ".tableName($course_code,'tool')." where c_id = $cid AND visibility=1 and admin=0 order by id";
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
                     while ($row = mysql_fetch_array($rs)) {
