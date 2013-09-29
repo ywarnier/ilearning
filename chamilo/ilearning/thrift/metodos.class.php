@@ -87,16 +87,20 @@
                 mysql_select_db($db_stats_database);
                 
                 $rs = mysql_query($sql,$conn);
-                $row = mysql_fetch_array($rs);
-                
-                if (mysql_num_rows($rs)>0) {
-                    // We have a previous login, update the row to add logout date.
-                    $sql = "update track_e_course_access set logout_course_date=now()
-                    where course_access_id=" .$row["access_id"];
-                    $rs = mysql_query($sql,$conn);
+                if ($rs !== false) {
+                    $row = mysql_fetch_array($rs);
+
+                    if (mysql_num_rows($rs)>0) {
+                        // We have a previous login, update the row to add logout date.
+                        $sql = "update track_e_course_access set logout_course_date=now()
+                        where course_access_id=" .$row["access_id"];
+                        $rs = mysql_query($sql,$conn);
+                    }
+                    return True;
+                } else {
+                    return false;
                 }
-                return True;	
-            } else { 
+            } else {
                 return False;
             }
         }
@@ -169,21 +173,23 @@
                 $sql = "select count(identificadorFD) as sco from cursos where identificadorFD=" . $course_code;
                 mysql_select_db($db_videomodel);
                 $rs = mysql_query($sql,$conn);
-                $row = mysql_fetch_array($rs);
-                if ($row["sco"]>0) {
-                    // We have SCO's
-                    $course_content[] = 0;
+                if ($rs !== false) {
+                    $row = mysql_fetch_array($rs);
+                    if ($row["sco"]>0) {
+                        // We have SCO's
+                        $course_content[] = 0;
+                    }
                 }
-                
                 // Exams. Is a quiz that was inserted on lp_item. Normaly with visibility=0 on quiz tool.
                 $sql = "select count(id) as quiz from ".tableName($course_id,'lp_item')." where item_type='quiz'";
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                $row = mysql_fetch_array($rs);
-                if ($row["quiz"]>0) {
-                    $course_content[] = 1;
+                if ($rs !== false) {
+                    $row = mysql_fetch_array($rs);
+                    if ($row["quiz"]>0) {
+                        $course_content[] = 1;
+                    }
                 }
-                
                 // Videos... Always active, at this moment.
                 $course_content[] = 3;
                 
@@ -263,63 +269,65 @@
                 $sql = "select count(id) as quiz from ".tableName($course_id,'quiz')." where feedback_type = 2";
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                $row = mysql_fetch_array($rs);
-                if ($row["quiz"]>0) {
-                    $course_content[] = 1;
+                if ($rs !== false) {
+                    $row = mysql_fetch_array($rs);
+                    if ($row["quiz"]>0) {
+                        $course_content[] = 1;
+                    }
                 }
-                
                 // Videos... Always active, at this moment.
                 //$course_content[] = 3;
                 
                 // Other tools. Look for visibility status on course.
                 $sql = "select name from ".tableName($course_id,'tool')." where visibility=1 and admin=0 order by id";
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    switch ($row["name"]) {
-                        case "quiz":
-                            $course_content[] = 2;
-                            break;
-                        case "link":
-                            $course_content[] = 4;
-                            break;
-                        case "document":
-                            $course_content[] = 5;
-                            break;
-                        case "Podcast":
-                            $course_content[] = 6;
-                            break;
-                        case "Dmail":
-                            //Not implemented in Chamilo
-                            //$course_content[] = 7;
-                            break;
-                        case "forum":
-                            $course_content[] = 8;
-                            break;
-                        case "announcement":
-                            $course_content[] = 9;
-                            break;
-                        case "calendar_event":
-                            $course_content[] = 10;
-                            break;
-                        case "chat":
-                            //Not implemented in chamilo
-                            //$course_content[] = 11;
-                            break;
-                        case "survey":
-                            $course_content[] = 12;
-                            break;
-                        case "course_description":
-                            $course_content[] = 13;
-                            break;
-                        case "tracking":
-                            $course_content[] = 14;
-                            break;
-                        case "Servicio tecnico":
-                            $course_content[] = 15;
-                            break;
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        switch ($row["name"]) {
+                            case "quiz":
+                                $course_content[] = 2;
+                                break;
+                            case "link":
+                                $course_content[] = 4;
+                                break;
+                            case "document":
+                                $course_content[] = 5;
+                                break;
+                            case "Podcast":
+                                $course_content[] = 6;
+                                break;
+                            case "Dmail":
+                                //Not implemented in Chamilo
+                                //$course_content[] = 7;
+                                break;
+                            case "forum":
+                                $course_content[] = 8;
+                                break;
+                            case "announcement":
+                                $course_content[] = 9;
+                                break;
+                            case "calendar_event":
+                                $course_content[] = 10;
+                                break;
+                            case "chat":
+                                //Not implemented in chamilo
+                                //$course_content[] = 11;
+                                break;
+                            case "survey":
+                                $course_content[] = 12;
+                                break;
+                            case "course_description":
+                                $course_content[] = 13;
+                                break;
+                            case "tracking":
+                                $course_content[] = 14;
+                                break;
+                            case "Servicio tecnico":
+                                $course_content[] = 15;
+                                break;
+                        }
                     }
                 }
-                
                 // Progress.
                 // There is no a Progress tool in Dokeos. Always active.
                 $course_content[] = 14;
@@ -350,18 +358,20 @@
             where c.code=r.course_code and u.user_id=r.user_id and u.user_id = ".$user_id." order by c.title";
             mysql_select_db($db_main_database);
             $rs = mysql_query($sql,$conn);
-            while ($row = mysql_fetch_array($rs)) {      
-                $course = new Course();
-                $course->code = $row["code"];
-                $course->directory = $row["directory"];
-                $course->db_name = $row["db_name"];
-                $course->course_language = $row["course_language"];
-                $course->title = $row["title"];
-                $course->coursedescription = $row["description"];
-                
-                // Look at ff, if it is a positive value the course subscription has expired.	
-                $course->active = 1; 
-                $courses[] = $course;
+            if ($rs !== false) {
+                while ($row = mysql_fetch_array($rs)) {
+                    $course = new Course();
+                    $course->code = $row["code"];
+                    $course->directory = $row["directory"];
+                    $course->db_name = $row["db_name"];
+                    $course->course_language = $row["course_language"];
+                    $course->title = $row["title"];
+                    $course->coursedescription = $row["description"];
+
+                    // Look at ff, if it is a positive value the course subscription has expired.
+                    $course->active = 1;
+                    $courses[] = $course;
+                }
             }
             return $courses;
         }
@@ -380,34 +390,35 @@
                 $sql = "select id, title, description, type from ".tableName($course_id,'quiz')." where feedback_type = 2";
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                
-                while ($row = mysql_fetch_array($rs)) {
-                    $Exam = new Quiz();
-                    $Exam->id = $row["id"];
-                    $Exam->title = $row["title"];
-                    $Exam->quizdescription = limpiarcadena(strip_tags($row["description"]));
-                    $Exam->type = $row["type"];
-                    /*
-                     Now we search for the exam score. If there are more than one score we take the last one.
-                     Real score (0-10) is based on this formula: 
-                     (exe_result*10)/exe_weighting
-                     */
-                    $sql2= "select exe_id,exe_result,exe_weighting from track_e_exercices 
-                    where exe_cours_id='".$course_id ."' and exe_user_id=" . $user_id . " 
-                    and exe_exo_id=".$row["id"]. " order by exe_date desc";
-                    mysql_select_db($db_stats_database);
-                    $rs2 = mysql_query($sql2,$conn);
-                    $row2 = mysql_fetch_array($rs2);
-                    if (mysql_num_rows($rs2) > 0 ) {
-                        $Exam->score = round($row2["exe_result"]*10/$row2["exe_weighting"],1);
-                        $Exam->num_intentos = 1;
-                    } else {
-                        // without score. Not realized.
-                        $Exam->score = -1;
-                        $Exam->num_intentos = 0;
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        $Exam = new Quiz();
+                        $Exam->id = $row["id"];
+                        $Exam->title = $row["title"];
+                        $Exam->quizdescription = limpiarcadena(strip_tags($row["description"]));
+                        $Exam->type = $row["type"];
+                        /*
+                         Now we search for the exam score. If there are more than one score we take the last one.
+                         Real score (0-10) is based on this formula:
+                         (exe_result*10)/exe_weighting
+                         */
+                        $sql2= "select exe_id,exe_result,exe_weighting from track_e_exercices
+                        where exe_cours_id='".$course_id ."' and exe_user_id=" . $user_id . "
+                        and exe_exo_id=".$row["id"]. " order by exe_date desc";
+                        mysql_select_db($db_stats_database);
+                        $rs2 = mysql_query($sql2,$conn);
+                        $row2 = mysql_fetch_array($rs2);
+                        if (mysql_num_rows($rs2) > 0 ) {
+                            $Exam->score = round($row2["exe_result"]*10/$row2["exe_weighting"],1);
+                            $Exam->num_intentos = 1;
+                        } else {
+                            // without score. Not realized.
+                            $Exam->score = -1;
+                            $Exam->num_intentos = 0;
+                        }
+                        $Exam->max_intentos = 1;
+                        $Exams[] = $Exam;
                     }
-                    $Exam->max_intentos = 1;
-                    $Exams[] = $Exam;
                 }
             }
             return $Exams;
@@ -428,31 +439,33 @@
                 // Type 6 not implemented on App.
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    $Exercise = new Quiz();
-                    $Exercise->id = $row["id"];
-                    $Exercise->title = $row["title"];
-                    $Exercise->quizdescription = limpiarcadena(strip_tags($row["description"]));
-                    $Exercise->type = $row["type"];
-                    /*
-                     Now we search for the quiz score. If there are more than one score we take the last one.
-                     Real score (0-10) is based on this formula: 
-                     (exe_result*10)/exe_weighting
-                     */
-                    $sql2= "select exe_id,exe_result,exe_weighting from track_e_exercices 
-                    where exe_cours_id='".$course_id ."' and exe_user_id=" . $user_id . " 
-                    and exe_exo_id=".$row["id"]. " order by exe_id desc";
-                    mysql_select_db($db_stats_database);
-                    
-                    $rs2 = mysql_query($sql2,$conn);
-                    $row2 = mysql_fetch_array($rs2);
-                    if (mysql_num_rows($rs2) > 0 ) {
-                        $Exercise->score = round($row2["exe_result"]*10/$row2["exe_weighting"],1);
-                    } else {
-                        // without score. Not realized.
-                        $Exercise->score = -1;
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        $Exercise = new Quiz();
+                        $Exercise->id = $row["id"];
+                        $Exercise->title = $row["title"];
+                        $Exercise->quizdescription = limpiarcadena(strip_tags($row["description"]));
+                        $Exercise->type = $row["type"];
+                        /*
+                         Now we search for the quiz score. If there are more than one score we take the last one.
+                         Real score (0-10) is based on this formula:
+                         (exe_result*10)/exe_weighting
+                         */
+                        $sql2= "select exe_id,exe_result,exe_weighting from track_e_exercices
+                        where exe_cours_id='".$course_id ."' and exe_user_id=" . $user_id . "
+                        and exe_exo_id=".$row["id"]. " order by exe_id desc";
+                        mysql_select_db($db_stats_database);
+
+                        $rs2 = mysql_query($sql2,$conn);
+                        $row2 = mysql_fetch_array($rs2);
+                        if (mysql_num_rows($rs2) > 0 ) {
+                            $Exercise->score = round($row2["exe_result"]*10/$row2["exe_weighting"],1);
+                        } else {
+                            // without score. Not realized.
+                            $Exercise->score = -1;
+                        }
+                        $Exercises[] = $Exercise;
                     }
-                    $Exercises[] = $Exercise;
                 }
             }
             return $Exercises;
@@ -468,16 +481,18 @@
                 $sql = "select qq.id,qq.question,qq.description,qq.ponderation,qq.position,qq.type,qq.picture from ".tableName($course_id,'quiz')." q, ".tableName($course_id,'quiz_question')." qq, ".tableName($course_id,'quiz_rel_question')." qrq  where qrq.question_id = qq.id and qrq.exercice_id= q.id and q.id=". $quiz_id ." ORDER BY RAND() LIMIT 10";
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    $Question = new Question();
-                    $Question->id = $row["id"];
-                    $Question->question = limpiarcadena(strip_tags($row["question"]));
-                    $Question->questiondescription = limpiarcadena(strip_tags($row["description"]));
-                    $Question->ponderation = $row["ponderation"];
-                    $Question->position = $row["position"];
-                    $Question->type = $row["type"];
-                    $Question->picture = $row["picture"];
-                    $Questions[] = $Question;
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        $Question = new Question();
+                        $Question->id = $row["id"];
+                        $Question->question = limpiarcadena(strip_tags($row["question"]));
+                        $Question->questiondescription = limpiarcadena(strip_tags($row["description"]));
+                        $Question->ponderation = $row["ponderation"];
+                        $Question->position = $row["position"];
+                        $Question->type = $row["type"];
+                        $Question->picture = $row["picture"];
+                        $Questions[] = $Question;
+                    }
                 }
             }
             return $Questions;
@@ -494,16 +509,18 @@
                 
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    $Question = new Question();
-                    $Question->id = $row["id"];
-                    $Question->question = limpiarcadena(strip_tags($row["question"]));
-                    $Question->questiondescription = limpiarcadena($row["description"]);
-                    $Question->ponderation = $row["ponderation"];
-                    $Question->position = $row["position"];
-                    $Question->type = $row["type"];
-                    $Question->picture = $row["picture"];
-                    $Questions[] = $Question;
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        $Question = new Question();
+                        $Question->id = $row["id"];
+                        $Question->question = limpiarcadena(strip_tags($row["question"]));
+                        $Question->questiondescription = limpiarcadena($row["description"]);
+                        $Question->ponderation = $row["ponderation"];
+                        $Question->position = $row["position"];
+                        $Question->type = $row["type"];
+                        $Question->picture = $row["picture"];
+                        $Questions[] = $Question;
+                    }
                 }
             }
             return $Questions;
@@ -524,15 +541,17 @@
                     $sql = "select qa.* from ".tableName($course_id,'quiz')." q,".tableName($course_id,'quiz_question')." qq,".tableName($course_id,'quiz_rel_question')." qrq , ".tableName($course_id,'quiz_answer')." qa where qrq.question_id = qq.id and qrq.exercice_id=q.id and qa.question_id=qq.id and qq.id=". $Question->id ." order by qa.question_id, qa.position";
                     mysql_select_db(databaseName($course_id));
                     $rs = mysql_query($sql,$conn);
-                    while ($row = mysql_fetch_array($rs)) {
-                        $tmp = new Answer();	
-                        $tmp->id = $row["id"];
-                        $tmp->answer = limpiarcadena(strip_tags($row["answer"]));
-                        $tmp->comment = '';
-                        $tmp->correct = $row["correct"];
-                        $tmp->position = $row["position"];
-                        $tmp->ponderation = $row["ponderation"];
-                        $tmpAnswers[]= $tmp;
+                    if ($rs !== false) {
+                        while ($row = mysql_fetch_array($rs)) {
+                            $tmp = new Answer();
+                            $tmp->id = $row["id"];
+                            $tmp->answer = limpiarcadena(strip_tags($row["answer"]));
+                            $tmp->comment = '';
+                            $tmp->correct = $row["correct"];
+                            $tmp->position = $row["position"];
+                            $tmp->ponderation = $row["ponderation"];
+                            $tmpAnswers[]= $tmp;
+                        }
                     }
                     $Answers[] = $tmpAnswers;
                 }
@@ -550,18 +569,20 @@
                 $sql = "select id,title,content from ".tableName($course_id,'course_description')." order by id";
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    $Coursedescription = new CourseDescription();
-                    $Coursedescription->id = $row["id"];
-                    
-                    /*
-                     ################### Revisar
-                     estaba repetido y no debería llevar HTML
-                     $Coursedescription->title = "<div style='font-family:Helvetica; font-size:11pt; background-color:#FFFFFF; border: 1px solid #006699; padding: 5px; border-radius: 10px;'>".limpiarcadena(strip_tags($row["title"]))."</div>";
-                     $Coursedescription->content = "<div style='font-family:Helvetica; font-size:10pt; background-color:#FFFFFF; border: 1px solid #006699; padding: 5px; border-radius: 10px;'>".limpiarcadena(strip_tags($row["content"]))."</div>";*/
-                    $Coursedescription->title = "<div style='font-family:Helvetica; font-size:11pt; background-color:#FFFFFF; border: 1px solid #006699; padding: 5px; border-radius: 10px;'>".(strip_tags($row["title"]))."</div>";
-                    $Coursedescription->content = "<div style='font-family:Helvetica; font-size:10pt; background-color:#FFFFFF; border: 1px solid #006699; padding: 5px; border-radius: 10px;'>".$row["content"]."</div>";
-                    $CD[] = $Coursedescription;
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        $Coursedescription = new CourseDescription();
+                        $Coursedescription->id = $row["id"];
+
+                        /*
+                         ################### Revisar
+                         estaba repetido y no debería llevar HTML
+                         $Coursedescription->title = "<div style='font-family:Helvetica; font-size:11pt; background-color:#FFFFFF; border: 1px solid #006699; padding: 5px; border-radius: 10px;'>".limpiarcadena(strip_tags($row["title"]))."</div>";
+                         $Coursedescription->content = "<div style='font-family:Helvetica; font-size:10pt; background-color:#FFFFFF; border: 1px solid #006699; padding: 5px; border-radius: 10px;'>".limpiarcadena(strip_tags($row["content"]))."</div>";*/
+                        $Coursedescription->title = "<div style='font-family:Helvetica; font-size:11pt; background-color:#FFFFFF; border: 1px solid #006699; padding: 5px; border-radius: 10px;'>".(strip_tags($row["title"]))."</div>";
+                        $Coursedescription->content = "<div style='font-family:Helvetica; font-size:10pt; background-color:#FFFFFF; border: 1px solid #006699; padding: 5px; border-radius: 10px;'>".$row["content"]."</div>";
+                        $CD[] = $Coursedescription;
+                    }
                 }
             }
             return $CD;
@@ -578,20 +599,22 @@
                 $sql = "select id,category_title, description,display_order from ".tableName($course_id,'link_category')." order by display_order";
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                
-                //Main Categorie does not exist in Dokeos. So we create it here.
-                $LinkCategorie = new LinkCategory();
-                $LinkCategorie->id = 0;
-                $LinkCategorie->title = 'General';
-                $LinkCategorie->categorydescription = 'Categoría principal';
-                $LinkCategories[] = $LinkCategorie;
-                
-                while ($row = mysql_fetch_array($rs)) {	
-                    $LinkCategorie = new LinkCategory();	
-                    $LinkCategorie->id = $row["id"];
-                    $LinkCategorie->title = $row["category_title"];
-                    $LinkCategorie->categorydescription = $row["description"];
+                if ($rs !== false) {
+
+                    //Main Categorie does not exist in Dokeos. So we create it here.
+                    $LinkCategorie = new LinkCategory();
+                    $LinkCategorie->id = 0;
+                    $LinkCategorie->title = 'General';
+                    $LinkCategorie->categorydescription = 'Categoría principal';
                     $LinkCategories[] = $LinkCategorie;
+
+                    while ($row = mysql_fetch_array($rs)) {
+                        $LinkCategorie = new LinkCategory();
+                        $LinkCategorie->id = $row["id"];
+                        $LinkCategorie->title = $row["category_title"];
+                        $LinkCategorie->categorydescription = $row["description"];
+                        $LinkCategories[] = $LinkCategorie;
+                    }
                 }
             }
             return $LinkCategories;
@@ -611,15 +634,17 @@
                     $sql = "select id,title,url,description from ".tableName($course_id,'link')." where category_id=" . $category->id . " order by display_order";
                     mysql_select_db(databaseName($course_id));
                     $rs = mysql_query($sql,$conn);
-                    while ($row = mysql_fetch_array($rs)) {
-                        $Link = new Link();
-                        $Link->id = $row["id"];
-                        $Link->title = $row["title"];
-                        $Link->url = $row["url"];
-                        $Link->linkdescription = $row["description"];
-                        $Links[] = $Link;
+                    if ($rs !== false) {
+                        while ($row = mysql_fetch_array($rs)) {
+                            $Link = new Link();
+                            $Link->id = $row["id"];
+                            $Link->title = $row["title"];
+                            $Link->url = $row["url"];
+                            $Link->linkdescription = $row["description"];
+                            $Links[] = $Link;
+                        }
+                        $recolector[] = $Links;
                     }
-                    $recolector[] = $Links;
                 }
             }
             return $recolector;
@@ -644,14 +669,16 @@
                 $sql = "select id,title,content,start_date,end_date from ".tableName($course_id,'calendar_event')." order by start_date";
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    $event = new CalendarItem();
-                    $event->id = $row["id"];
-                    $event->title = $row["title"];
-                    $event->content = limpiarcadena(strip_tags($row["content"]));
-                    $event->startdate = strtotime($row["start_date"]);
-                    $event->enddate = strtotime($row["end_date"]);
-                    $Calendar[] = $event;
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        $event = new CalendarItem();
+                        $event->id = $row["id"];
+                        $event->title = $row["title"];
+                        $event->content = limpiarcadena(strip_tags($row["content"]));
+                        $event->startdate = strtotime($row["start_date"]);
+                        $event->enddate = strtotime($row["end_date"]);
+                        $Calendar[] = $event;
+                    }
                 }
             }
             return $Calendar;
@@ -669,21 +696,23 @@
                 $sql = "select cat_id,cat_title from ".tableName($course_id,'forum_category')." order by cat_order";
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    $category = new ForumCategory();
-                    $category->id = $row["cat_id"];
-                    $category->title = $row["cat_title"];	
-                    $sql = "select forum_id,forum_title from ".tableName($course_id,'forum_forum')." where forum_category=" . $category->id;
-                    $rs2 = mysql_query($sql,$conn);
-                    $forums = array();
-                    while ($row2 = mysql_fetch_array($rs2)) {
-                        $forum = new ForumForum();
-                        $forum->id = $row2["forum_id"];
-                        $forum->title = $row2["forum_title"];
-                        $forums[] = $forum;
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        $category = new ForumCategory();
+                        $category->id = $row["cat_id"];
+                        $category->title = $row["cat_title"];
+                        $sql = "select forum_id,forum_title from ".tableName($course_id,'forum_forum')." where forum_category=" . $category->id;
+                        $rs2 = mysql_query($sql,$conn);
+                        $forums = array();
+                        while ($row2 = mysql_fetch_array($rs2)) {
+                            $forum = new ForumForum();
+                            $forum->id = $row2["forum_id"];
+                            $forum->title = $row2["forum_title"];
+                            $forums[] = $forum;
+                        }
+                        $category->forums =  $forums;
+                        $categories[] = $category;
                     }
-                    $category->forums =  $forums;
-                    $categories[] = $category;
                 }
             }
             return $categories;
@@ -699,12 +728,14 @@
                 $sql = "select thread_id,thread_title,thread_date from ".tableName($course_id,'forum_thread')." where forum_id=". $forum_id. " order by thread_date desc";
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    $thread = new ForumThread();
-                    $thread->id = $row["thread_id"];
-                    $thread->title = utf8_decode($row["thread_title"]);
-                    $thread->date = strtotime($row["thread_date"]);
-                    $threads[] = $thread;
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        $thread = new ForumThread();
+                        $thread->id = $row["thread_id"];
+                        $thread->title = utf8_decode($row["thread_title"]);
+                        $thread->date = strtotime($row["thread_date"]);
+                        $threads[] = $thread;
+                    }
                 }
             }
             return $threads;
@@ -721,19 +752,21 @@
                 $sql = "select post_id, post_title, post_text,post_date, poster_id from ".tableName($course_id,'forum_post')." where thread_id=". $thread_id. " order by post_parent_id";
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    $post = new ForumPost();
-                    $post->id = $row["post_id"];
-                    $post->title = utf8_decode($row["post_title"]);
-                    $post->text = utf8_decode($row["post_text"]);
-                    // look for user values.
-                    mysql_select_db($db_main_database);
-                    $sql2 = "select firstname,lastname from user where user_id=" . $row["poster_id"];
-                    $rs2 = mysql_query($sql2,$conn);
-                    $row2 = mysql_fetch_array($rs2);
-                    $post->poster_name = $row2["firstname"] . ' '. $row2["lastname"];
-                    $post->date = strtotime($row["post_date"]);
-                    $posts[] = $post;
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        $post = new ForumPost();
+                        $post->id = $row["post_id"];
+                        $post->title = utf8_decode($row["post_title"]);
+                        $post->text = utf8_decode($row["post_text"]);
+                        // look for user values.
+                        mysql_select_db($db_main_database);
+                        $sql2 = "select firstname,lastname from user where user_id=" . $row["poster_id"];
+                        $rs2 = mysql_query($sql2,$conn);
+                        $row2 = mysql_fetch_array($rs2);
+                        $post->poster_name = $row2["firstname"] . ' '. $row2["lastname"];
+                        $post->date = strtotime($row["post_date"]);
+                        $posts[] = $post;
+                    }
                 }
             }
             return $posts;
@@ -754,12 +787,15 @@
                 // select inserted thread_id
                 $sql = "select max(thread_id) as thread_id from ".tableName($course_id,'forum_thread');
                 $rs = mysql_query($sql,$conn);
-                $row = mysql_fetch_array($rs);
-                $thread_id = $row["thread_id"];
-                // Finally insert new post, calling setForumPost.
-                return self::setForumPost($course_id, $thread_id, $post_title, $post_text);
+                if ($rs !== false) {
+                    $row = mysql_fetch_array($rs);
+                    $thread_id = $row["thread_id"];
+                    // Finally insert new post, calling setForumPost.
+                    return self::setForumPost($course_id, $thread_id, $post_title, $post_text);
+                }
+                return false;
             } else {
-                return False;
+                return false;
             }
         }
         
@@ -775,24 +811,27 @@
                 $sql = "select forum_id from ".tableName($course_id,'forum_thread')." where thread_id=" . $thread_id;
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                $row = mysql_fetch_array($rs);
-                $forum_id = $row["forum_id"];
-                // Now we need last post
-                $sql = "select max(post_id) as post_id from ".tableName($course_id,'forum_post')." where forum_id=" . $forum_id ." and thread_id=" . $thread_id;
-                $rs = mysql_query($sql,$conn);
-                $row = mysql_fetch_array($rs);
-                //It possible that there is no post. Perhaps we came from setForumThread.
-                if (isset($row["post_id"])) {
-                    $post_parent_id = $row["post_id"];
-                } else {
-                    // No parent. first post.
-                    $post_parent_id = 0;
+                if ($rs !== false) {
+                    $row = mysql_fetch_array($rs);
+                    $forum_id = $row["forum_id"];
+                    // Now we need last post
+                    $sql = "select max(post_id) as post_id from ".tableName($course_id,'forum_post')." where forum_id=" . $forum_id ." and thread_id=" . $thread_id;
+                    $rs = mysql_query($sql,$conn);
+                    $row = mysql_fetch_array($rs);
+                    //It possible that there is no post. Perhaps we came from setForumThread.
+                    if (isset($row["post_id"])) {
+                        $post_parent_id = $row["post_id"];
+                    } else {
+                        // No parent. first post.
+                        $post_parent_id = 0;
+                    }
+                    // And finally insert new post
+                    $sql = "insert into ".tableName($course_id,'forum_post')."(post_title, post_text, thread_id, forum_id, poster_id, poster_name, post_date, post_notification, post_parent_id,visible) values ('". mysql_escape_string(utf8_encode( $post_title)). "','". mysql_escape_string(utf8_encode( $post_text)). "'," . $thread_id . "," . $forum_id . "," . $user_id . ",'',now(),0,". $post_parent_id .",1)" ;
+                    return mysql_query($sql,$conn);
                 }
-                // And finally insert new post
-                $sql = "insert into ".tableName($course_id,'forum_post')."(post_title, post_text, thread_id, forum_id, poster_id, poster_name, post_date, post_notification, post_parent_id,visible) values ('". mysql_escape_string(utf8_encode( $post_title)). "','". mysql_escape_string(utf8_encode( $post_text)). "'," . $thread_id . "," . $forum_id . "," . $user_id . ",'',now(),0,". $post_parent_id .",1)" ;
-                return mysql_query($sql,$conn);
+                return false;
             } else {
-                return False;
+                return false;
             }
         }
         
@@ -858,13 +897,15 @@
                 $sql = "select title,content,end_date from ".tableName($course_id,'announcement')." where id=" . $id ;
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    $announcement = new DetailAnnouncement();
-                    $announcement->title = $row["title"];
-                    $content = str_replace(self::get_tags(), $data, $row['content']);
-                    $announcement->content = limpiarcadena(strip_tags($content));
-                    $announcement->date = strtotime($row["end_date"]);
-                    $announcements[] = $announcement;
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        $announcement = new DetailAnnouncement();
+                        $announcement->title = $row["title"];
+                        $content = str_replace(self::get_tags(), $data, $row['content']);
+                        $announcement->content = limpiarcadena(strip_tags($content));
+                        $announcement->date = strtotime($row["end_date"]);
+                        $announcements[] = $announcement;
+                    }
                 }
             }
             return $announcements;
@@ -895,102 +936,114 @@
                 $sql = "select unix_timestamp(login_course_date) as id, unix_timestamp(logout_course_date) as od from track_e_course_access where user_id=" . $user_id . " and course_code='" . $course_id . "' and not isnull(logout_course_date) order by login_course_date";
                 mysql_select_db($db_stats_database);
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    // Calculating time connected
-                    $diferencia = $row["od"] - $row["id"];
-                    $diferencia_segundos = $diferencia_segundos + $diferencia;
-                    if ($c == 0) {
-                        // First connection
-                        $primer_acceso = $row["id"];
-                    } else {
-                        if ($c == mysql_num_rows($rs)-1) {
-                            //Last connection
-                            $ultimo_acceso = $row["id"];
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        // Calculating time connected
+                        $diferencia = $row["od"] - $row["id"];
+                        $diferencia_segundos = $diferencia_segundos + $diferencia;
+                        if ($c == 0) {
+                            // First connection
+                            $primer_acceso = $row["id"];
+                        } else {
+                            if ($c == mysql_num_rows($rs)-1) {
+                                //Last connection
+                                $ultimo_acceso = $row["id"];
+                            }
                         }
+                        $c = $c + 1;
                     }
-                    $c = $c + 1;
                 }
                 // Get total number of forum's post
                 $sql = "select count(poster_id) as total from ".tableName($course_id,'forum_post')." where poster_id=" . $user_id;
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                $row = mysql_fetch_array($rs);
-                $mensajes_foros = $row["total"];
+                if ($rs !== false) {
+                    $row = mysql_fetch_array($rs);
+                    $mensajes_foros = $row["total"];
+                } else {
+                    $mensajes_foros = 0;
+                }
                 $mensajes_correo = 0;
                 // Global evaluation inserted by the c0urse tutor
                 $nota_global = -1;
                 //Get Exams
                 $sql = "select id,title from ".tableName($course_id,'quiz')." where feedback_type = 2 order by id";
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    $GradesExams = new GradesExams();
-                    $GradesExams->id = $row["id"];
-                    $GradesExams->title = $row["title"];
-                    $GradesExams->grades = 0;
-                    // For each Exam we need the learner's score
-                    $sql = "select exe_exo_id,exe_result,exe_weighting from track_e_exercices where exe_user_id=" . $user_id . " and exe_cours_id='" . $course_id . "' and exe_exo_id=" .$row["id"] . " order by exe_date DESC";
-                    mysql_select_db($db_stats_database);
-                    
-                    $rs2 = mysql_query($sql,$conn);
-                    $row2 = mysql_fetch_array($rs2);
-                    if ( mysql_num_rows($rs2)>0) {
-                        /*
-                         Now we search for the Exam score. If there are more than one score we take the last one.
-                         Real score (0-10) is based on this formula: 
-                         (exe_result*10)/exe_weighting
-                         */
-                        $GradesExams->grades = round( ($row2["exe_result"] * 10 )/$row2["exe_weighting"]);
-                        $GrdesExams->num_intentos = 1;
-                    } else {
-                        //Don't have score.
-                        $GradesExams->grades = -1;
-                        $GradesExams->num_intentos = 0;
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        $GradesExams = new GradesExams();
+                        $GradesExams->id = $row["id"];
+                        $GradesExams->title = $row["title"];
+                        $GradesExams->grades = 0;
+                        // For each Exam we need the learner's score
+                        $sql = "select exe_exo_id,exe_result,exe_weighting from track_e_exercices where exe_user_id=" . $user_id . " and exe_cours_id='" . $course_id . "' and exe_exo_id=" .$row["id"] . " order by exe_date DESC";
+                        mysql_select_db($db_stats_database);
+
+                        $rs2 = mysql_query($sql,$conn);
+                        $row2 = mysql_fetch_array($rs2);
+                        if ( mysql_num_rows($rs2)>0) {
+                            /*
+                             Now we search for the Exam score. If there are more than one score we take the last one.
+                             Real score (0-10) is based on this formula:
+                             (exe_result*10)/exe_weighting
+                             */
+                            $GradesExams->grades = round( ($row2["exe_result"] * 10 )/$row2["exe_weighting"]);
+                            $GradesExams->num_intentos = 1;
+                        } else {
+                            //Don't have score.
+                            $GradesExams->grades = -1;
+                            $GradesExams->num_intentos = 0;
+                        }
+                        $GradesExams->max_intentos = 1;
+                        $GradesExamsList[] = $GradesExams;
                     }
-                    $GradesExams->max_intentos = 1; 
-                    $GradesExamsList[] = $GradesExams;
                 }
                 // Get Exercices
                 $sql = "select id,title from ".tableName($course_id,'quiz')." where feedback_type = 0  order by id";
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    $GradesExercises = new GradesExercises();
-                    $GradesExercises->id = $row["id"];
-                    $GradesExercises->title = $row["title"];
-                    $GradesExercises->attempt = 0;
-                    $GradesExercises->grades = -1;
-                    // For each Exercice we need the learner's score and attempts  
-                    $sql = "select exe_exo_id,exe_result,exe_weighting from track_e_exercices where exe_user_id=" . $user_id . " and exe_cours_id='" . $course_id . "' and exe_exo_id=" .$GradesExercises->id . " order by exe_date";
-                    mysql_select_db($db_main_database);
-                    $rs2 = mysql_query($sql,$conn);
-                    while ($row2 = mysql_fetch_array($rs2)) {
-                        /*
-                         Now we search for the Exercice score. If there are more than one score we take the last one.
-                         Real score (0-10) is based on this formula: 
-                         (exe_result*10)/exe_weighting
-                         */
-                        $GradesExercises->attempt = $GradesExercises->attempt+ 1;
-                        $GradesExercises->grades = round( ($row2["exe_result"] * 10 )/$row2["exe_weighting"]);
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        $GradesExercises = new GradesExercises();
+                        $GradesExercises->id = $row["id"];
+                        $GradesExercises->title = $row["title"];
+                        $GradesExercises->attempt = 0;
+                        $GradesExercises->grades = -1;
+                        // For each Exercice we need the learner's score and attempts
+                        $sql = "select exe_exo_id,exe_result,exe_weighting from track_e_exercices where exe_user_id=" . $user_id . " and exe_cours_id='" . $course_id . "' and exe_exo_id=" .$GradesExercises->id . " order by exe_date";
+                        mysql_select_db($db_main_database);
+                        $rs2 = mysql_query($sql,$conn);
+                        while ($row2 = mysql_fetch_array($rs2)) {
+                            /*
+                             Now we search for the Exercice score. If there are more than one score we take the last one.
+                             Real score (0-10) is based on this formula:
+                             (exe_result*10)/exe_weighting
+                             */
+                            $GradesExercises->attempt = $GradesExercises->attempt+ 1;
+                            $GradesExercises->grades = round( ($row2["exe_result"] * 10 )/$row2["exe_weighting"]);
+                        }
+                        $GradesExercisesList[] = $GradesExercises;
                     }
-                    $GradesExercisesList[] = $GradesExercises;	
                 }
                 // Get course score
                 $sql = "select i.id, i.title, iv.score, iv.status from ".tableName($course_id,'lp_item')." as i, ".tableName($course_id,'lp_view')." v, ".tableName($course_id,'lp_item_view')." iv where i.item_type='sco' and i.id = iv.lp_item_id and v.user_id=". $user_id ." and v.id=iv.lp_view_id order by i.display_order";
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    $ProgressCourse = new ProgressCourse();
-                    $ProgressCourse->id = $row["id"];
-                    $ProgressCourse->title = $row["title"];
-                    $ProgressCourse->status = $row["status"];
-                    $ProgressCourse->progress = $row["score"];
-                    $ProgressCourseList[] = $ProgressCourse;
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        $ProgressCourse = new ProgressCourse();
+                        $ProgressCourse->id = $row["id"];
+                        $ProgressCourse->title = $row["title"];
+                        $ProgressCourse->status = $row["status"];
+                        $ProgressCourse->progress = $row["score"];
+                        $ProgressCourseList[] = $ProgressCourse;
+                    }
                 }
                 // Join all data
                 
                 $Progress->time = $diferencia_segundos;
                 $Progress->msg_forum = $mensajes_foros;
-                $Progress->msg_mail = $mensaje_correo;
+                $Progress->msg_mail = $mensajes_correo;
                 $Progress->first_access = $primer_acceso;
                 $Progress->last_access = $ultimo_acceso;
                 $Progress->evaluation = $nota_global;
@@ -1014,18 +1067,20 @@
                 $sql = "select survey_id,title,subtitle,DATEDIFF(CURDATE(),avail_from) as inicio, DATEDIFF(CURDATE(),avail_till) as fin, ".tableName($course_id,'survey_invitation').".answered  from ".tableName($course_id,'survey').", ".tableName($course_id,'survey_invitation')." where survey_code=code and user=" . $user_id;
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    $Survey = new SurveyQuiz();
-                    $Survey->id = $row["survey_id"];
-                    $Survey->title = limpiarcadena(strip_tags($row["title"]));
-                    $Survey->quizdescription = limpiarcadena(strip_tags($row["subtitle"]));
-                    // look if Pool it's open and not answered
-                    if ($row["inicio"] >= 0 && $row["fin"] <= 0 && $row["answered"] == 0) {
-                        $Survey->open = 1;
-                    } else {
-                        $Survey->open = 0;
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        $Survey = new SurveyQuiz();
+                        $Survey->id = $row["survey_id"];
+                        $Survey->title = limpiarcadena(strip_tags($row["title"]));
+                        $Survey->quizdescription = limpiarcadena(strip_tags($row["subtitle"]));
+                        // look if Pool it's open and not answered
+                        if ($row["inicio"] >= 0 && $row["fin"] <= 0 && $row["answered"] == 0) {
+                            $Survey->open = 1;
+                        } else {
+                            $Survey->open = 0;
+                        }
+                        $SurveyList[] = $Survey;
                     }
-                    $SurveyList[] = $Survey;
                 }
             }
             return $SurveyList;
@@ -1041,14 +1096,16 @@
                 $sql = "select question_id,survey_question,sort,type,max_value from ".tableName($course_id,'survey_question')." where survey_id=" . $quiz_id . " order by sort";
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    $Question = new SurveyQuestion();
-                    $Question->id = $row["question_id"];
-                    $Question->question = limpiarcadena(strip_tags($row["survey_question"]));
-                    $Question->sort = $row["sort"];
-                    $Question->type = $row["type"];
-                    $Question->max_value = $row["max_value"];
-                    $Questions[] = $Question;
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        $Question = new SurveyQuestion();
+                        $Question->id = $row["question_id"];
+                        $Question->question = limpiarcadena(strip_tags($row["survey_question"]));
+                        $Question->sort = $row["sort"];
+                        $Question->type = $row["type"];
+                        $Question->max_value = $row["max_value"];
+                        $Questions[] = $Question;
+                    }
                 }
             }
             return $Questions;     
@@ -1069,12 +1126,14 @@
                     $sql = "select question_option_id, option_text,sort from ".tableName($course_id,'survey_question_option')." where question_id=" . $Question->id . " order by sort";
                     mysql_select_db(databaseName($course_id));
                     $rs = mysql_query($sql,$conn);
-                    while ($row = mysql_fetch_array($rs)) {
-                        $tmp = new SurveyAnswer();	
-                        $tmp->id = $row["question_option_id"];
-                        $tmp->answer = limpiarcadena(strip_tags($row["option_text"]));
-                        $tmp->sort = $row["sort"];
-                        $tmpAnswers[] = $tmp;
+                    if ($rs !== false) {
+                        while ($row = mysql_fetch_array($rs)) {
+                            $tmp = new SurveyAnswer();
+                            $tmp->id = $row["question_option_id"];
+                            $tmp->answer = limpiarcadena(strip_tags($row["option_text"]));
+                            $tmp->sort = $row["sort"];
+                            $tmpAnswers[] = $tmp;
+                        }
                     }
                     $Answers[] = $tmpAnswers;
                 }
@@ -1088,6 +1147,7 @@
             global $conn;
             global $db_prefix;
             global $user_id;
+            $course_id = api_get_course_id();
             if (IsUserAllowed($course_id)) {
                 if (count($answers)>0) {	
                     foreach ($answers as $answer) {
@@ -1121,13 +1181,15 @@
                 $rs = mysql_query($sql,$conn);
                 $sql = "select max(exe_id) as maximo from track_e_exercices where exe_user_id=".$user_id." and exe_cours_id='".$course_id."' and exe_exo_id=" . $exam_id;
                 $rs = mysql_query($sql,$conn);
-                $row = mysql_fetch_array($rs);
-                $exe_id = $row["maximo"];
-                foreach ($responses as $response) {
-                    $sql= "insert into track_e_attempt (exe_id,user_id,question_id,answer,course_code,position,tms) 
-                    values (".$exe_id.",".$user_id.",".$response->question_id.",'".$response->option."','".$course_id."',".$response->value.",now())";
-                    mysql_select_db($db_main_database);	
-                    $rs = mysql_query($sql,$conn);
+                if ($rs !== false) {
+                    $row = mysql_fetch_array($rs);
+                    $exe_id = $row["maximo"];
+                    foreach ($responses as $response) {
+                        $sql= "insert into track_e_attempt (exe_id,user_id,question_id,answer,course_code,position,tms)
+                        values (".$exe_id.",".$user_id.",".$response->question_id.",'".$response->option."','".$course_id."',".$response->value.",now())";
+                        mysql_select_db($db_main_database);
+                        $rs = mysql_query($sql,$conn);
+                    }
                 }
                 return True;
             } else {
@@ -1193,13 +1255,15 @@
                 $sql = "select title,comment,size,path from ".tableName($course_id,'podcast')." order by title";
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    $Podcast = new Podcast();
-                    $Podcast->title = $row["title"];
-                    $Podcast->comment = $row["comment"];
-                    $Podcast->size = $row["size"];
-                    $Podcast->path =  $row["path"];
-                    $PodcastList[] = $Podcast;
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        $Podcast = new Podcast();
+                        $Podcast->title = $row["title"];
+                        $Podcast->comment = $row["comment"];
+                        $Podcast->size = $row["size"];
+                        $Podcast->path =  $row["path"];
+                        $PodcastList[] = $Podcast;
+                    }
                 }
             }
             return $PodcastList;
@@ -1225,43 +1289,44 @@
                 $sql = "select path,comment,title,filetype,size,readonly from ".tableName($course_id,'document')." order by path";
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                while ($row = mysql_fetch_array($rs)) {
-                    // Discriminate not useful folders and subfolders.
-                    $valido = 0;
-                    $resultado = explode ("/",$row["path"]);
-                    if (in_array($resultado[1],$lista_folders) || in_array($resultado[2],$lista_folders) || in_array($resultado[3],$lista_folders)) {
-                        // Default folder not useful for learners
+                if ($rs !== false) {
+                    while ($row = mysql_fetch_array($rs)) {
+                        // Discriminate not useful folders and subfolders.
                         $valido = 0;
-                    } else {	
-                        $resultado = explode (".",$row["path"]);
-                        if (in_array($resultado[1],$lista_extensiones) || $row["filetype"] == 'folder') {
-                            // Valid extensión or folder created by tutor or gestor
-                            if ($row["title"] == "") {
-                                // No title... rare but posible
-                                $valido = 0;				
-                            } else {
-                                // Valid one.
-                                $valido = 1;
-                            }
-                        } else {
+                        $resultado = explode ("/",$row["path"]);
+                        if (in_array($resultado[1],$lista_folders) || in_array($resultado[2],$lista_folders) || in_array($resultado[3],$lista_folders)) {
+                            // Default folder not useful for learners
                             $valido = 0;
+                        } else {
+                            $resultado = explode (".",$row["path"]);
+                            if (in_array($resultado[1],$lista_extensiones) || $row["filetype"] == 'folder') {
+                                // Valid extensión or folder created by tutor or gestor
+                                if ($row["title"] == "") {
+                                    // No title... rare but posible
+                                    $valido = 0;
+                                } else {
+                                    // Valid one.
+                                    $valido = 1;
+                                }
+                            } else {
+                                $valido = 0;
+                            }
                         }
+
+                        if ($valido == 1) {
+                            $Document = new Documents();
+                            $Document->dir =  $row["path"];
+                            $Document->title = $row["title"];
+                            $Document->filetype = $row["filetype"];
+                            // El nivel en la app debe empezar en 2. :?
+                            $Document->nivel = substr_count ($row["path"],'/') +1;
+                            $Document->id = $c;
+                            $DocumentList[] = $Document;
+                            $c = $c + 1;
+                        }
+
                     }
-                    
-                    if ($valido == 1) {
-                        $Document = new Documents();
-                        $Document->dir =  $row["path"];
-                        $Document->title = $row["title"];
-                        $Document->filetype = $row["filetype"];
-                        // El nivel en la app debe empezar en 2. :?
-                        $Document->nivel = substr_count ($row["path"],'/') +1;
-                        $Document->id = $c;
-                        $DocumentList[] = $Document;
-                        $c = $c + 1;
-                    }
-                    
                 }
-                
                 // Delete empty folders
                 while (count($DocumentList) != $num_items) {
                     $c = 0;
@@ -1301,43 +1366,51 @@
                 $sql = "select id,lp_id from ".tableName($course_id,'lp_item')." where path=" . $quiz_id;
                 mysql_select_db(databaseName($course_id));
                 $rs = mysql_query($sql,$conn);
-                $row = mysql_fetch_array($rs);
-                $lp_item_id = $row["id"];
-                $lp_id = $row["lp_id"];
-                
-                // Look for id on lp_view table.
-                $sql = "select id from ".tableName($course_id,'lp_view')." where user_id=" . $user_id ." and lp_id=" . $lp_id;
-                $rs = mysql_query($sql,$conn);
-                $row = mysql_fetch_array($rs);
-                if (mysql_num_rows($rs) > 0) {
-                    $lp_view_id = $row["id"];
-                } else {
-                    // There is no lp_view id, first access. Adding it.
-                    $sql = "insert into ".tableName($course_id,'lp_view')." (lp_id, user_id, view_count) values (".$lp_id.",".$user_id.", 1)";
-                    $rs = mysql_query($sql,$conn);
-                    // Get inserted id
+                if ($rs !== false) {
+                    $row = mysql_fetch_array($rs);
+                    $lp_item_id = $row["id"];
+                    $lp_id = $row["lp_id"];
+
+                    // Look for id on lp_view table.
                     $sql = "select id from ".tableName($course_id,'lp_view')." where user_id=" . $user_id ." and lp_id=" . $lp_id;
                     $rs = mysql_query($sql,$conn);
-                    $row = mysql_fetch_array($rs);
-                    $lp_view_id = $row["id"];
-                }
-                // Look for rows on lp_item_view table.
-                $sql = "select id,start_time from ".tableName($course_id,'lp_item_view')." where lp_view_id=".$lp_view_id." and lp_item_id=" . $lp_item_id;
-                $rs = mysql_query($sql,$conn);
-                $row = mysql_fetch_array($rs);
-                
-                if (mysql_num_rows($rs) > 0) {
-                    // Update values
-                    $start_time = "";
-                    if ( $row["start_time"] == 0 ) {
-                        $start_time= ", start_time=" . time();		
+                    if ($rs !== false) {
+                        $row = mysql_fetch_array($rs);
+                        if (mysql_num_rows($rs) > 0) {
+                            $lp_view_id = $row["id"];
+                        } else {
+                            // There is no lp_view id, first access. Adding it.
+                            $sql = "insert into ".tableName($course_id,'lp_view')." (lp_id, user_id, view_count) values (".$lp_id.",".$user_id.", 1)";
+                            $rs = mysql_query($sql,$conn);
+                            // Get inserted id
+                            $sql = "select id from ".tableName($course_id,'lp_view')." where user_id=" . $user_id ." and lp_id=" . $lp_id;
+                            $rs = mysql_query($sql,$conn);
+                            if ($rs !== false) {
+                                $row = mysql_fetch_array($rs);
+                                $lp_view_id = $row["id"];
+                            } else {
+                                return false; //we should never get here, anyway
+                            }
+                        }
+                        // Look for rows on lp_item_view table.
+                        $sql = "select id,start_time from ".tableName($course_id,'lp_item_view')." where lp_view_id=".$lp_view_id." and lp_item_id=" . $lp_item_id;
+                        $rs = mysql_query($sql,$conn);
+                        $row = mysql_fetch_array($rs);
+
+                        if (mysql_num_rows($rs) > 0) {
+                            // Update values
+                            $start_time = "";
+                            if ( $row["start_time"] == 0 ) {
+                                $start_time= ", start_time=" . time();
+                            }
+                            $sql = "update ".tableName($course_id,'lp_item_view')." set status='completed' " . $start_time . " where lp_view_id=".$lp_view_id." and lp_item_id=" . $lp_item_id;
+                            $rs = mysql_query($sql,$conn);
+                        } else {
+                            // There is no row, insert it.
+                            $sql = "insert into ".tableName($course_id,'lp_item_view')." (lp_item_id, lp_view_id, view_count, start_time, status, score, suspend_data) values (".$lp_item_id.", ".$lp_view_id.", 1,".time().", 'completed',0, '')";
+                            $rs = mysql_query($sql,$conn);
+                        }
                     }
-                    $sql = "update ".tableName($course_id,'lp_item_view')." set status='completed' " . $start_time . " where lp_view_id=".$lp_view_id." and lp_item_id=" . $lp_item_id;
-                    $rs = mysql_query($sql,$conn);
-                } else {
-                    // There is no row, insert it.
-                    $sql = "insert into ".tableName($course_id,'lp_item_view')." (lp_item_id, lp_view_id, view_count, start_time, status, score, suspend_data) values (".$lp_item_id.", ".$lp_view_id.", 1,".time().", 'completed',0, '')";
-                    $rs = mysql_query($sql,$conn);
                 }
                 return true;
             } else {
@@ -1365,24 +1438,25 @@
                 // Get exe_id
                 $sql = "select exe_id from track_e_exercices where exe_user_id=".$user_id . " and exe_cours_id='". $course_id."' and exe_exo_id=".$quiz_id." and exe_result=-1 and exe_weighting=-1";
                 $rs = mysql_query($sql,$conn);
-                $row = mysql_fetch_array($rs);
-                $new_exe_id = $row["exe_id"];
-                $i = 0;
-                // Save attempt and calculate screo
-                foreach ($questions as $question) {			
-                    $weighting = $weighting + $question->ponderation;
-                    foreach ( $answers[$i] as $answer) {
-                        if ($answer->selected == true) {
-                            $sql = "insert into track_e_attempt (exe_id, user_id, question_id, answer, teacher_comment, marks, course_code,tms) values (".$new_exe_id.",".$user_id.",".$question->id. ",".$answer->id.",'',".$answer->ponderation.",'".$course_id."',now() )";
-                            $rs = mysql_query($sql,$conn);
-                            if ($answer->correct) {
-                                $result = $result + $answer->ponderation;
+                if ($rs !== false) {
+                    $row = mysql_fetch_array($rs);
+                    $new_exe_id = $row["exe_id"];
+                    $i = 0;
+                    // Save attempt and calculate screo
+                    foreach ($questions as $question) {
+                        $weighting = $weighting + $question->ponderation;
+                        foreach ( $answers[$i] as $answer) {
+                            if ($answer->selected == true) {
+                                $sql = "insert into track_e_attempt (exe_id, user_id, question_id, answer, teacher_comment, marks, course_code,tms) values (".$new_exe_id.",".$user_id.",".$question->id. ",".$answer->id.",'',".$answer->ponderation.",'".$course_id."',now() )";
+                                $rs = mysql_query($sql,$conn);
+                                if ($answer->correct) {
+                                    $result = $result + $answer->ponderation;
+                                }
                             }
-                        }			
+                        }
+                        $i = $i + 1;
                     }
-                    $i = $i + 1;
                 }
-                
                 // And finaly update score
                 $sql = "update track_e_exercices set exe_result=".$result.",exe_weighting=".$weighting.", exe_date= now() where exe_id=" . $new_exe_id;
                 mysql_select_db($db_stats_database);
@@ -1406,14 +1480,16 @@
             global $db_prefix;
             global $user_id;
             global $db_main_database;
+            $diccionario = array();
 
             $sql = "Select username from user where user_id=" . $user_id;
             mysql_select_db($db_main_database);
             $rs = mysql_query($sql,$conn);
-            $row = mysql_fetch_array($rs);
-            if ( mysql_num_rows($rs) > 0) {
-                $diccionario = array();
-                $diccionario["username"]= $row["username"];
+            if ($rs !== false) {
+                $row = mysql_fetch_array($rs);
+                if ( mysql_num_rows($rs) > 0) {
+                    $diccionario["username"]= $row["username"];
+                }
             }
             return $diccionario;
         }
@@ -1436,15 +1512,17 @@
                     $sql = "select qa.* from  ".tableName($course_id,'quiz')." q, ".tableName($course_id,'quiz_question')." qq, ".tableName($course_id,'quiz_rel_question')." qrq,  ".tableName($course_id,'quiz_answer')." qa where qrq.question_id = qq.id and qrq.exercice_id=q.id and qa.question_id=qq.id and qq.id=". $Question->id ." and q.id= " . $quiz_id ." order by qa.question_id, qa.position";
                     mysql_select_db(databaseName($course_id));
                     $rs = mysql_query($sql,$conn);
-                    while ($row = mysql_fetch_array($rs)) {
-                        $tmp = new Answer();	
-                        $tmp->id = $row["id"];
-                        $tmp->answer = limpiarcadena(strip_tags($row["answer"]));
-                        $tmp->comment = '';
-                        $tmp->correct = $row["correct"];
-                        $tmp->position = $row["position"];
-                        $tmp->ponderation = $row["ponderation"];
-                        $tmpAnswers[]= $tmp;
+                    if ($rs !== false) {
+                        while ($row = mysql_fetch_array($rs)) {
+                            $tmp = new Answer();
+                            $tmp->id = $row["id"];
+                            $tmp->answer = limpiarcadena(strip_tags($row["answer"]));
+                            $tmp->comment = '';
+                            $tmp->correct = $row["correct"];
+                            $tmp->position = $row["position"];
+                            $tmp->ponderation = $row["ponderation"];
+                            $tmpAnswers[]= $tmp;
+                        }
                     }
                     $Answers[] = $tmpAnswers;
                 }
@@ -1473,15 +1551,17 @@
                     
                     mysql_select_db(databaseName($course_id));
                     $rs = mysql_query($sql,$conn);
-                    while ($row = mysql_fetch_array($rs)) {
-                        $tmp = new Answer();	
-                        $tmp->id = $row["id"];
-                        $tmp->answer = limpiarcadena(strip_tags($row["answer"]));
-                        $tmp->comment = '';
-                        $tmp->correct = $row["correct"];
-                        $tmp->position = $row["position"];
-                        $tmp->ponderation = $row["ponderation"];
-                        $tmpAnswers[]= $tmp;
+                    if ($rs !== false) {
+                        while ($row = mysql_fetch_array($rs)) {
+                            $tmp = new Answer();
+                            $tmp->id = $row["id"];
+                            $tmp->answer = limpiarcadena(strip_tags($row["answer"]));
+                            $tmp->comment = '';
+                            $tmp->correct = $row["correct"];
+                            $tmp->position = $row["position"];
+                            $tmp->ponderation = $row["ponderation"];
+                            $tmpAnswers[]= $tmp;
+                        }
                     }
                     $Answers[] = $tmpAnswers;
                 }
@@ -1541,21 +1621,23 @@
         $sql = "select id from ".tableName($course_id,'lp_view')."  where user_id=" . $user_id ." and lp_id=" . $id;
         mysql_select_db(databaseName($course_id));
         $rs = mysql_query($sql,$conn);
-        $row = mysql_fetch_array($rs);
-        if (mysql_num_rows($rs) > 0) {
-            $lp_view_id = $row["id"];
-            $sql = "select id,suspend_data from ".tableName($course_id,'lp_item_view')."  where lp_view_id=".$lp_view_id." and lp_item_id=" . $id;
-            $rs2 = mysql_query($sql,$conn);
-            $row2 = mysql_fetch_array($rs2);
-            if (mysql_num_rows($rs2) > 0) {
-                // It's all right, lets see if sco is completed
-                $count_visited = explode("#",$row2["suspend_data"]);
-                if ( count($count_visited) == $sco_count) {
-                    // Completed
-                    return True;
+        if ($rs !== false) {
+            $row = mysql_fetch_array($rs);
+            if (mysql_num_rows($rs) > 0) {
+                $lp_view_id = $row["id"];
+                $sql = "select id,suspend_data from ".tableName($course_id,'lp_item_view')."  where lp_view_id=".$lp_view_id." and lp_item_id=" . $id;
+                $rs2 = mysql_query($sql,$conn);
+                $row2 = mysql_fetch_array($rs2);
+                if (mysql_num_rows($rs2) > 0) {
+                    // It's all right, lets see if sco is completed
+                    $count_visited = explode("#",$row2["suspend_data"]);
+                    if ( count($count_visited) == $sco_count) {
+                        // Completed
+                        return True;
+                    }
                 }
             }
-        }   
+        }
         // Incompleted.
         return False;
                     
@@ -1571,23 +1653,27 @@
         $sql = 'select launch_data from '.tableName($course_id,'lp_view').' where id=' . $sco_id ;
         mysql_select_db(databaseName($course_id));    
         $rs = mysql_query($sql,$conn);
-        $row = mysql_fetch_array($rs);   
-        // Now we need to see if video is completed
-        // Get Launch_data array
-        $pages_array = getVideomodelPagesArray ($row["launch_data"]); 
-        // Get video Key from array
-        $key = GetKeyFromPagesArray ($pages_array,$id_video);	 
-        // Get suspend_data from lp_item_view
-        $sql = "select suspend_data from ".tableName($course_id,'lp_item_view')." iv, ".tableName($course_id,'lp_view')." v where v.user_id=" . $user_id . " and v.id=iv.lp_view_id and iv.lp_item_id=" .$sco_id;
-        mysql_select_db(databaseName($course_id));    
-        $rs = mysql_query($sql,$conn);
-        $row = mysql_fetch_array($rs);
-        $suspend_data = explode("#",$row["suspend_data"]);
-        // Look if located key is in suspend_data
-        if (in_array($key,$suspend_data)) {
-            return True;
+        if ($rs !== false) {
+            $row = mysql_fetch_array($rs);
+            // Now we need to see if video is completed
+            // Get Launch_data array
+            $pages_array = getVideomodelPagesArray ($row["launch_data"]);
+            // Get video Key from array
+            $key = GetKeyFromPagesArray ($pages_array,$id_video);
+            // Get suspend_data from lp_item_view
+            $sql = "select suspend_data from ".tableName($course_id,'lp_item_view')." iv, ".tableName($course_id,'lp_view')." v where v.user_id=" . $user_id . " and v.id=iv.lp_view_id and iv.lp_item_id=" .$sco_id;
+            mysql_select_db(databaseName($course_id));
+            $rs = mysql_query($sql,$conn);
+            $row = mysql_fetch_array($rs);
+            $suspend_data = explode("#",$row["suspend_data"]);
+            // Look if located key is in suspend_data
+            if (in_array($key,$suspend_data)) {
+                return True;
+            } else {
+                return False;
+            }
         } else {
-            return False;
+            return false;
         }
     }
     
@@ -1662,13 +1748,17 @@
         $sql = "select count(user_id) as total from course_rel_user where user_id=$user_id and course_code='".$course_code."'";
         mysql_select_db($db_main_database);
         $rs = mysql_query($sql,$conn);
-        $row = mysql_fetch_array($rs);
-        if ($row["total"]>0)
-        {
-            return true;
-        }
-        else
-        {
+        if ($rs !== false) {
+            $row = mysql_fetch_array($rs);
+            if ($row["total"]>0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        } else {
             return false;
         }
     }
