@@ -252,7 +252,6 @@
         }
         
         public function getSupportedContentsVersion($course_id,$version) {
-            
             // Return available tools for a course and app version.
             // No version use at this moment.
             global $conn;
@@ -1717,7 +1716,7 @@
         global $db_prefix;
         global $db_glue;
         global $single_database;
-        $table_name = $table;
+        $table_name = 'c_'.$table;
         if ($single_database == true) {
             $table_name = $table_prefix.$db_prefix.$course.$db_glue.$table;
         }
