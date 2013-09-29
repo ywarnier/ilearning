@@ -57,25 +57,25 @@
             return $version;
         }
         
-        public function getLecturesScos($course_id,$sco_id) {
+        public function getLecturesScos($course_code,$sco_id) {
             
         }
         
-        public function getScos($course_id) {
+        public function getScos($course_code) {
             
         }
         
-        public function saveLecturesScos($course_id,$sco_id,$video_id) {
+        public function saveLecturesScos($course_code,$sco_id,$video_id) {
             
         }
         
-        public function getLectures($course_id) {
+        public function getLectures($course_code) {
 
         }
         
-        public function logoutCourse($course_id) {
+        public function logoutCourse($course_code) {
             
-            if (IsUserAllowed($course_id)) { 
+            if (IsUserAllowed($course_code)) {
                 // Logout from platform
                 // Insert logout date on track_e_course_access table, search for the last login (with logout=null) for update.
                 global $conn;
@@ -83,7 +83,7 @@
                 global $user_id;
                 global $db_stats_database;
                 
-                $sql = "select max(course_access_id) as access_id from track_e_course_access where course_code='" .$course_id ."' and user_id= ". $user_id . " and ISNULL(logout_course_date)";
+                $sql = "select max(course_access_id) as access_id from track_e_course_access where course_code='" .$course_code ."' and user_id= ". $user_id . " and ISNULL(logout_course_date)";
                 mysql_select_db($db_stats_database);
                 
                 $rs = mysql_query($sql,$conn);
@@ -105,8 +105,8 @@
             }
         }
         
-        public function loginCourse($course_id) {
-            if (IsUserAllowed($course_id)) { 
+        public function loginCourse($course_code) {
+            if (IsUserAllowed($course_code)) {
                 // Platform login
                 // Save login date on track_e_course_access table. Logout is null.
                 global $conn;
@@ -115,7 +115,7 @@
                 global $db_stats_database;
                 
                 $sql = "insert into track_e_course_access (course_code,user_id,login_course_date,counter) 
-                values ('".$course_id."',".$user_id.",now(),1)";
+                values ('".$course_code."',".$user_id.",now(),1)";
                 mysql_select_db($db_stats_database);
                 $rs = mysql_query($sql,$conn);
                 return True;
@@ -124,13 +124,13 @@
             }
         }
         
-        public function saveLecture($course_id,$lecture_id,$time,$score,$status) {
+        public function saveLecture($course_code,$lecture_id,$time,$score,$status) {
             
 
         }
         
         
-        public function getSupportedContents($course_id) {
+        public function getSupportedContents($course_code) {
             
             /*
              Select all available tools for this course.
@@ -160,13 +160,13 @@
             global $db_videomodel;
             $course_content = array();
             
-            if (IsUserAllowed($course_id)) {
+            if (IsUserAllowed($course_code)) {
                 // first, we login.
-                $login = self::loginCourse($course_id);
+                $login = self::loginCourse($course_code);
                 // We are going to discrimine between "normal courses" html,js,flash... and new video model courses
                 // so, only will return the sco tool if the course has new video model sco's
                 // Need to take care of the real course code, we delete all string after first five digits.
-                $course_code = substr($course_id,0,5);
+                $course_code = substr($course_code,0,5);
                 // If course_id is not well used at plattform this is not going to work properly.
                 // To prevent errors using two databases on the same server there is a parameter 
                 // to mysql_connect to force the creation of a new link.
@@ -181,8 +181,8 @@
                     }
                 }
                 // Exams. Is a quiz that was inserted on lp_item. Normaly with visibility=0 on quiz tool.
-                $sql = "select count(id) as quiz from ".tableName($course_id,'lp_item')." where item_type='quiz'";
-                mysql_select_db(databaseName($course_id));
+                $sql = "select count(id) as quiz from ".tableName($course_code,'lp_item')." where item_type='quiz'";
+                mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
                     $row = mysql_fetch_array($rs);
@@ -194,7 +194,7 @@
                 $course_content[] = 3;
                 
                 // Other tools. Look for visibility status on course.
-                $sql = "select name from ".tableName($course_id,'tool')." where visibility=1 and admin=0 order by id";
+                $sql = "select name from ".tableName($course_code,'tool')." where visibility=1 and admin=0 order by id";
                 $rs = mysql_query($sql,$conn);
                 while ($row = mysql_fetch_array($rs)) {
                     switch ($row["name"]) {
@@ -251,7 +251,7 @@
             return $course_content;
         }
         
-        public function getSupportedContentsVersion($course_id,$version) {
+        public function getSupportedContentsVersion($course_code,$version) {
             // Return available tools for a course and app version.
             // No version use at this moment.
             global $conn;
@@ -259,14 +259,14 @@
             global $user_id;
             global $db_videomodel;
             $course_content = array();
-            if (IsUserAllowed($course_id)) {
+            if (IsUserAllowed($course_code)) {
                 // first, we login.
                 
-                $login = self::loginCourse($course_id);
+                $login = self::loginCourse($course_code);
                 
                 // Exams. Is a quiz that was inserted on lp_item. Normaly with visibility=0 on quiz tool.
-                $sql = "select count(id) as quiz from ".tableName($course_id,'quiz')." where feedback_type = 2";
-                mysql_select_db(databaseName($course_id));
+                $sql = "select count(id) as quiz from ".tableName($course_code,'quiz')." where feedback_type = 2";
+                mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
                     $row = mysql_fetch_array($rs);
@@ -278,7 +278,7 @@
                 //$course_content[] = 3;
                 
                 // Other tools. Look for visibility status on course.
-                $sql = "select name from ".tableName($course_id,'tool')." where visibility=1 and admin=0 order by id";
+                $sql = "select name from ".tableName($course_code,'tool')." where visibility=1 and admin=0 order by id";
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
                     while ($row = mysql_fetch_array($rs)) {
