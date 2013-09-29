@@ -39,8 +39,18 @@
     $single_database = $_configuration['single_database'];
     $table_prefix= $_configuration['table_prefix'];
     $db_glue = $_configuration['db_glue'] ;
-    
-    
+
+    /**
+     * Get a course ID (int) from the course code, as the IOS app uses the
+     * code everywhere and Chamilo changed to int IDs since 1.9.0
+     * @param string Course code
+     * @return int Course ID
+     */
+    function GetCourseIdFromCode($course_code) {
+        $course = api_get_course_info($course_code);
+        if ($course == false) { return false; }
+        return $course['id'];
+    }
     
     // Thrift class
     class ILearningHandler implements ILearningIf {
@@ -159,7 +169,7 @@
             global $user_id;
             global $db_videomodel;
             $course_content = array();
-            $cid = $this->GetCourseIdFromCode($course_code);
+            $cid = GetCourseIdFromCode($course_code);
 
             if (IsUserAllowed($course_code)) {
                 // first, we login.
@@ -260,7 +270,7 @@
             global $user_id;
             global $db_videomodel;
             $course_content = array();
-            $cid = $this->GetCourseIdFromCode($course_code);
+            $cid = GetCourseIdFromCode($course_code);
             if (IsUserAllowed($course_code)) {
                 // first, we login.
                 
@@ -1763,17 +1773,6 @@
         } else {
             return false;
         }
-    }
-    /**
-     * Get a course ID (int) from the course code, as the IOS app uses the
-     * code everywhere and Chamilo changed to int IDs since 1.9.0
-     * @param string Course code
-     * @return int Course ID
-     */
-    function GetCourseIdFromCode($course_code) {
-        $course = api_get_course_info($course_code);
-        if ($course == false) { return false; }
-        return $course['id'];
     }
 
     ?>
