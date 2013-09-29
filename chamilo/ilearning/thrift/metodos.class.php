@@ -40,18 +40,6 @@
     $table_prefix= $_configuration['table_prefix'];
     $db_glue = $_configuration['db_glue'] ;
 
-    /**
-     * Get a course ID (int) from the course code, as the IOS app uses the
-     * code everywhere and Chamilo changed to int IDs since 1.9.0
-     * @param string Course code
-     * @return int Course ID
-     */
-    function GetCourseIdFromCode($course_code) {
-        $course = api_get_course_info($course_code);
-        if ($course == false) { return false; }
-        return $course['id'];
-    }
-    
     // Thrift class
     class ILearningHandler implements ILearningIf {
         protected $log = array();
@@ -169,9 +157,10 @@
             global $user_id;
             global $db_videomodel;
             $course_content = array();
-            $cid = GetCourseIdFromCode($course_code);
 
             if (IsUserAllowed($course_code)) {
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
                 // first, we login.
                 $login = self::loginCourse($course_code);
                 // We are going to discrimine between "normal courses" html,js,flash... and new video model courses
@@ -270,8 +259,10 @@
             global $user_id;
             global $db_videomodel;
             $course_content = array();
-            $cid = GetCourseIdFromCode($course_code);
+
             if (IsUserAllowed($course_code)) {
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
                 // first, we login.
                 
                 $login = self::loginCourse($course_code);
@@ -396,10 +387,12 @@
             global $db_prefix;
             global $user_id;
             global $db_stats_database;
-            
+
             $Exams = array();
             if (IsUserAllowed($course_code)) {
-                $sql = "select id, title, description, type from ".tableName($course_code,'quiz')." where feedback_type = 2";
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
+                $sql = "select id, title, description, type from ".tableName($course_code,'quiz')." where c_id = $cid AND feedback_type = 2";
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
@@ -444,10 +437,12 @@
             global $db_prefix;
             global $user_id;
             global $db_stats_database;
-            
+
             $Exercises = array();
             if (IsUserAllowed($course_code)) {
-                $sql = "select id, title, description, type from ".tableName($course_code,'quiz')." where active=1 and type<>6 and feedback_type=0";
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
+                $sql = "select id, title, description, type from ".tableName($course_code,'quiz')." where c_id = $cid AND active=1 and type<>6 and feedback_type=0";
                 // Type 6 not implemented on App.
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
@@ -488,9 +483,12 @@
             // Get 10 random questions from a quiz
             global $conn;
             global $db_prefix;
+
             $Questions = array();
             if (IsUserAllowed($course_code)) {
-                $sql = "select qq.id,qq.question,qq.description,qq.ponderation,qq.position,qq.type,qq.picture from ".tableName($course_code,'quiz')." q, ".tableName($course_code,'quiz_question')." qq, ".tableName($course_code,'quiz_rel_question')." qrq  where qrq.question_id = qq.id and qrq.exercice_id= q.id and q.id=". $quiz_id ." ORDER BY RAND() LIMIT 10";
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
+                $sql = "select qq.id,qq.question,qq.description,qq.ponderation,qq.position,qq.type,qq.picture from ".tableName($course_code,'quiz')." q, ".tableName($course_code,'quiz_question')." qq, ".tableName($course_code,'quiz_rel_question')." qrq  where q.c_id = $cid AND qrq.question_id = qq.id and qrq.exercice_id= q.id and q.id=". $quiz_id ." ORDER BY RAND() LIMIT 10";
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
@@ -515,9 +513,12 @@
             // Get all questions for an Exercice
             global $conn;
             global $db_prefix;
+
             $Questions = array();
             if (IsUserAllowed($course_code)) {
-                $sql = "select qq.id,qq.question,qq.description,qq.ponderation,qq.position,qq.type,qq.picture from ".tableName($course_code,'quiz')." q,".tableName($course_code,'quiz_question')." qq,".tableName($course_code,'quiz_rel_question')." qrq where qrq.question_id = qq.id and qrq.exercice_id= q.id and q.id=". $quiz_id ." and qq.type<>6 ORDER BY q.id";
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
+                $sql = "select qq.id,qq.question,qq.description,qq.ponderation,qq.position,qq.type,qq.picture from ".tableName($course_code,'quiz')." q,".tableName($course_code,'quiz_question')." qq,".tableName($course_code,'quiz_rel_question')." qrq where q.c_id = $cid AND qrq.question_id = qq.id and qrq.exercice_id= q.id and q.id=". $quiz_id ." and qq.type<>6 ORDER BY q.id";
                 
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
@@ -545,12 +546,14 @@
             global $db_prefix;
             $Answers = array();
             if (IsUserAllowed($course_code)) {
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
                 // First of all we get the questions
                 $Questions = self::getQuestions($course_code, $quiz_id);
                 foreach ($Questions as $Question) {
                     // Now for each question...
                     $tmpAnswers = array();
-                    $sql = "select qa.* from ".tableName($course_code,'quiz')." q,".tableName($course_code,'quiz_question')." qq,".tableName($course_code,'quiz_rel_question')." qrq , ".tableName($course_code,'quiz_answer')." qa where qrq.question_id = qq.id and qrq.exercice_id=q.id and qa.question_id=qq.id and qq.id=". $Question->id ." order by qa.question_id, qa.position";
+                    $sql = "select qa.* from ".tableName($course_code,'quiz')." q,".tableName($course_code,'quiz_question')." qq,".tableName($course_code,'quiz_rel_question')." qrq , ".tableName($course_code,'quiz_answer')." qa where q.c_id = $cid AND qrq.question_id = qq.id and qrq.exercice_id=q.id and qa.question_id=qq.id and qq.id=". $Question->id ." order by qa.question_id, qa.position";
                     mysql_select_db(databaseName($course_code));
                     $rs = mysql_query($sql,$conn);
                     if ($rs !== false) {
@@ -576,9 +579,12 @@
             // Get course description
             global $conn;
             global $db_prefix;
+
             $CD = array();
             if (IsUserAllowed($course_code)) {
-                $sql = "select id,title,content from ".tableName($course_code,'course_description')." order by id";
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
+                $sql = "select id,title,content from ".tableName($course_code,'course_description')." WHERE c_id = $cid order by id";
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
@@ -605,10 +611,12 @@
             // Get link categories
             global $conn;
             global $db_prefix;
-            
+
             $LinkCategories = array();
             if (IsUserAllowed($course_code)) {
-                $sql = "select id,category_title, description,display_order from ".tableName($course_code,'link_category')." order by display_order";
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
+                $sql = "select id,category_title, description,display_order from ".tableName($course_code,'link_category')." WHERE c_id = $cid order by display_order";
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
@@ -639,11 +647,14 @@
             $LinkCategories = self::getLinkCategories($course_code);
             global $conn;
             global $db_prefix;
+
             $recolector = array();
             if (IsUserAllowed($course_code)) {
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
                 foreach ($LinkCategories as $category) {
                     $Links =  array() ;
-                    $sql = "select id,title,url,description from ".tableName($course_code,'link')." where category_id=" . $category->id . " order by display_order";
+                    $sql = "select id,title,url,description from ".tableName($course_code,'link')." where c_id = $cid AND category_id=" . $category->id . " order by display_order";
                     mysql_select_db(databaseName($course_code));
                     $rs = mysql_query($sql,$conn);
                     if ($rs !== false) {
@@ -676,9 +687,12 @@
             // Get Calendar events.
             global $conn;
             global $db_prefix;
+
             $Calendar = array();
             if (IsUserAllowed($course_code)) {
-                $sql = "select id,title,content,start_date,end_date from ".tableName($course_code,'calendar_event')." order by start_date";
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
+                $sql = "select id,title,content,start_date,end_date from ".tableName($course_code,'calendar_event')." WHERE c_id = $cid order by start_date";
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
@@ -703,9 +717,12 @@
             // Each categorie has an array with the forums
             global $conn;
             global $db_prefix;
+
             $categories = array();
             if (IsUserAllowed($course_code)) {
-                $sql = "select cat_id,cat_title from ".tableName($course_code,'forum_category')." order by cat_order";
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
+                $sql = "select cat_id,cat_title from ".tableName($course_code,'forum_category')." WHERE c_id = $cid order by cat_order";
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
@@ -713,7 +730,7 @@
                         $category = new ForumCategory();
                         $category->id = $row["cat_id"];
                         $category->title = $row["cat_title"];
-                        $sql = "select forum_id,forum_title from ".tableName($course_code,'forum_forum')." where forum_category=" . $category->id;
+                        $sql = "select forum_id,forum_title from ".tableName($course_code,'forum_forum')." where c_id = $cid AND forum_category=" . $category->id;
                         $rs2 = mysql_query($sql,$conn);
                         $forums = array();
                         while ($row2 = mysql_fetch_array($rs2)) {
@@ -735,9 +752,12 @@
             // Get forum threads.
             global $conn;
             global $db_prefix;
+
             $threads = array();
             if (IsUserAllowed($course_code)) {
-                $sql = "select thread_id,thread_title,thread_date from ".tableName($course_code,'forum_thread')." where forum_id=". $forum_id. " order by thread_date desc";
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
+                $sql = "select thread_id,thread_title,thread_date from ".tableName($course_code,'forum_thread')." where c_id = $cid AND forum_id=". $forum_id. " order by thread_date desc";
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
@@ -759,9 +779,12 @@
             global $conn;
             global $db_prefix;
             global $db_main_database;
+
             $posts = array();
             if (IsUserAllowed($course_code)) {
-                $sql = "select post_id, post_title, post_text,post_date, poster_id from ".tableName($course_code,'forum_post')." where thread_id=". $thread_id. " order by post_parent_id";
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
+                $sql = "select post_id, post_title, post_text,post_date, poster_id from ".tableName($course_code,'forum_post')." where c_id = $cid AND thread_id=". $thread_id. " order by post_parent_id";
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
@@ -792,12 +815,14 @@
             global $db_prefix;
             global $db_main_database;
             if (IsUserAllowed($course_code)) {
-                $sql = "insert into ".tableName($course_code,'forum_thread')." (thread_title,forum_id,thread_replies,thread_poster_id,thread_poster_name,thread_views,thread_last_post,thread_date,thread_sticky,locked)
-                values ('" . mysql_real_escape_string(utf8_encode( $thread_title)) . "'," . $forum_id . ",0," .  $user_id . ",'',0,0,now(),0,0)";
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
+                $sql = "insert into ".tableName($course_code,'forum_thread')." (c_id,thread_title,forum_id,thread_replies,thread_poster_id,thread_poster_name,thread_views,thread_last_post,thread_date,thread_sticky,locked)
+                values ($cid,'" . mysql_real_escape_string(utf8_encode( $thread_title)) . "'," . $forum_id . ",0," .  $user_id . ",'',0,0,now(),0,0)";
                 mysql_select_db(databaseName($course_code));
                 mysql_query($sql,$conn);
                 // select inserted thread_id
-                $sql = "select max(thread_id) as thread_id from ".tableName($course_code,'forum_thread');
+                $sql = "select max(thread_id) as thread_id from ".tableName($course_code,'forum_thread')." WHERE c_id = $cid";
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
                     $row = mysql_fetch_array($rs);
@@ -818,16 +843,19 @@
             global $conn;	
             global $db_prefix;
             global $db_main_database;
+
             if (IsUserAllowed($course_code)) {
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
                 // First of all we need the forum_id
-                $sql = "select forum_id from ".tableName($course_code,'forum_thread')." where thread_id=" . $thread_id;
+                $sql = "select forum_id from ".tableName($course_code,'forum_thread')." where c_id = $cid AND thread_id=" . $thread_id;
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
                     $row = mysql_fetch_array($rs);
                     $forum_id = $row["forum_id"];
                     // Now we need last post
-                    $sql = "select max(post_id) as post_id from ".tableName($course_code,'forum_post')." where forum_id=" . $forum_id ." and thread_id=" . $thread_id;
+                    $sql = "select max(post_id) as post_id from ".tableName($course_code,'forum_post')." where c_id = $cid AND forum_id=" . $forum_id ." and thread_id=" . $thread_id;
                     $rs = mysql_query($sql,$conn);
                     $row = mysql_fetch_array($rs);
                     //It possible that there is no post. Perhaps we came from setForumThread.
@@ -838,7 +866,7 @@
                         $post_parent_id = 0;
                     }
                     // And finally insert new post
-                    $sql = "insert into ".tableName($course_code,'forum_post')."(post_title, post_text, thread_id, forum_id, poster_id, poster_name, post_date, post_notification, post_parent_id,visible) values ('". mysql_escape_string(utf8_encode( $post_title)). "','". mysql_escape_string(utf8_encode( $post_text)). "'," . $thread_id . "," . $forum_id . "," . $user_id . ",'',now(),0,". $post_parent_id .",1)" ;
+                    $sql = "insert into ".tableName($course_code,'forum_post')."(c_id, post_title, post_text, thread_id, forum_id, poster_id, poster_name, post_date, post_notification, post_parent_id,visible) values ($cid, '". mysql_real_escape_string(utf8_encode( $post_title)). "','". mysql_real_escape_string(utf8_encode( $post_text)). "'," . $thread_id . "," . $forum_id . "," . $user_id . ",'',now(),0,". $post_parent_id .",1)" ;
                     return mysql_query($sql,$conn);
                 }
                 return false;
@@ -852,10 +880,12 @@
             // Get announcements
             global $conn;
             global $db_prefix;
-            
+
             $announcements = array();
             if (IsUserAllowed($course_code)) {
-                $sql = "select id,title,end_date from ".tableName($course_code,'announcement')." order by display_order";
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
+                $sql = "select id,title,end_date from ".tableName($course_code,'announcement')." WHERE c_id = $cid order by display_order";
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 while ($row = mysql_fetch_array($rs)) {
@@ -880,9 +910,11 @@
             global $conn;
             global $db_prefix;
             global $user_id;
-            
+
             $announcements = array();
             if (IsUserAllowed($course_code)) {
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
                 $reader_info  = api_get_user_info($user_id);
                 $course_info  = api_get_course_info($course_code);
                 $teacher_list = Coursemanager::get_teacher_list_from_course_code($course_info['code']);
@@ -906,7 +938,7 @@
                 
                 
                 
-                $sql = "select title,content,end_date from ".tableName($course_code,'announcement')." where id=" . $id ;
+                $sql = "select title,content,end_date from ".tableName($course_code,'announcement')." where c_id = $cid AND id=" . $id ;
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
@@ -931,8 +963,11 @@
             global $db_main_database;
             global $user_id;
             global $db_stats_database;
+
             $Progress = new Progress();
             if (IsUserAllowed($course_code)) {
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
                 // Iinitializing values
                 $diferencia_segundos = 0 ;
                 $primer_acceso = "Sin datos";
@@ -966,7 +1001,7 @@
                     }
                 }
                 // Get total number of forum's post
-                $sql = "select count(poster_id) as total from ".tableName($course_code,'forum_post')." where poster_id=" . $user_id;
+                $sql = "select count(poster_id) as total from ".tableName($course_code,'forum_post')." where c_id = $cid AND poster_id=" . $user_id;
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
@@ -979,7 +1014,7 @@
                 // Global evaluation inserted by the c0urse tutor
                 $nota_global = -1;
                 //Get Exams
-                $sql = "select id,title from ".tableName($course_code,'quiz')." where feedback_type = 2 order by id";
+                $sql = "select id,title from ".tableName($course_code,'quiz')." where c_id = $cid AND feedback_type = 2 order by id";
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
                     while ($row = mysql_fetch_array($rs)) {
@@ -1011,7 +1046,7 @@
                     }
                 }
                 // Get Exercices
-                $sql = "select id,title from ".tableName($course_code,'quiz')." where feedback_type = 0  order by id";
+                $sql = "select id,title from ".tableName($course_code,'quiz')." where c_id = $cid AND feedback_type = 0  order by id";
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
@@ -1072,11 +1107,12 @@
             global $conn;
             global $db_prefix;
             global $user_id;
-            
+
             $SurveyList = array();
             if (IsUserAllowed($course_code)) {
-                
-                $sql = "select survey_id,title,subtitle,DATEDIFF(CURDATE(),avail_from) as inicio, DATEDIFF(CURDATE(),avail_till) as fin, ".tableName($course_code,'survey_invitation').".answered  from ".tableName($course_code,'survey').", ".tableName($course_code,'survey_invitation')." where survey_code=code and user=" . $user_id;
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
+                $sql = "select survey_id,title,subtitle,DATEDIFF(CURDATE(),avail_from) as inicio, DATEDIFF(CURDATE(),avail_till) as fin, ".tableName($course_code,'survey_invitation').".answered  from ".tableName($course_code,'survey')." s, ".tableName($course_code,'survey_invitation')." si where s.c_id = $cid AND survey_code=code and user=" . $user_id;
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
@@ -1103,9 +1139,12 @@
             // Select pool's questions
             global $conn;
             global $db_prefix;
+
             $Questions = array();
             if (IsUserAllowed($course_code)) {
-                $sql = "select question_id,survey_question,sort,type,max_value from ".tableName($course_code,'survey_question')." where survey_id=" . $quiz_id . " order by sort";
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
+                $sql = "select question_id,survey_question,sort,type,max_value from ".tableName($course_code,'survey_question')." where c_id = $cid AND survey_id=" . $quiz_id . " order by sort";
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
@@ -1128,14 +1167,17 @@
             // Get pool's questions with answers
             global $conn;
             global $db_prefix;
+
             $Answers = array();
             if (IsUserAllowed($course_code)) {
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
                 // First of all we get the questions
                 $Questions = self::getPollsQuestions($course_code, $quiz_id);
                 foreach ($Questions as $Question) {
                     // For each question
                     $tmpAnswers = array();
-                    $sql = "select question_option_id, option_text,sort from ".tableName($course_code,'survey_question_option')." where question_id=" . $Question->id . " order by sort";
+                    $sql = "select question_option_id, option_text,sort from ".tableName($course_code,'survey_question_option')." where c_id = $cid AND question_id=" . $Question->id . " order by sort";
                     mysql_select_db(databaseName($course_code));
                     $rs = mysql_query($sql,$conn);
                     if ($rs !== false) {
@@ -1159,14 +1201,17 @@
             global $conn;
             global $db_prefix;
             global $user_id;
-            $course_code = api_get_course_id();
+
+            //TODO: no course code here, so impossible to check permissions!
             if (IsUserAllowed($course_code)) {
                 if (count($answers)>0) {	
                     foreach ($answers as $answer) {
                         if ($course_code == "") {
                             $course_code = $answer->course_id;
                         }
-                        $sql="insert into ".tableName($course_code,'survey_answer')." (survey_id,question_id,option_id,value,user) values (".$answer->survey_id.",".$answer->question_id.",'".$answer->option."',".$answer->value.",".$user_id.")";
+                        $c_info = api_get_course_info($course_code);
+                        $cid = $c_info['real_id'];
+                        $sql="insert into ".tableName($course_code,'survey_answer')." (c_id, survey_id,question_id,option_id,value,user) values ($cid,".$answer->survey_id.",".$answer->question_id.",'".$answer->option."',".$answer->value.",".$user_id.")";
                         mysql_select_db(databaseName($course_code));
                         $rs = mysql_query($sql,$conn);
                     } 
@@ -1287,7 +1332,7 @@
             global $conn;
             global $db_prefix;
             global $ruta_web;
-            
+
             // Valid extensions
             $lista_extensiones = array('htm','jpg','gif','html','png','xls','doc','ppt','pdf','htm','key','pages','numbers');
             // Crap folders... Nothing important there.
@@ -1298,7 +1343,9 @@
             $DocumentList = array();
             $FinalDocumentList = array();
             if (IsUserAllowed($course_code)) {
-                $sql = "select path,comment,title,filetype,size,readonly from ".tableName($course_code,'document')." order by path";
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
+                $sql = "select path,comment,title,filetype,size,readonly from ".tableName($course_code,'document')." WHERE c_id = $cid order by path";
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
@@ -1373,9 +1420,12 @@
             global $conn;
             global $db_prefix;
             global $user_id;
+
             if (IsUserAllowed($course_code)) {
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
                 // Look for necesary id's on lp and lp_item tables
-                $sql = "select id,lp_id from ".tableName($course_code,'lp_item')." where path=" . $quiz_id;
+                $sql = "select id,lp_id from ".tableName($course_code,'lp_item')." where c_id = $cid AND path=" . $quiz_id;
                 mysql_select_db(databaseName($course_code));
                 $rs = mysql_query($sql,$conn);
                 if ($rs !== false) {
@@ -1384,7 +1434,7 @@
                     $lp_id = $row["lp_id"];
 
                     // Look for id on lp_view table.
-                    $sql = "select id from ".tableName($course_code,'lp_view')." where user_id=" . $user_id ." and lp_id=" . $lp_id;
+                    $sql = "select id from ".tableName($course_code,'lp_view')." where c_id = $cid AND user_id=" . $user_id ." and lp_id=" . $lp_id;
                     $rs = mysql_query($sql,$conn);
                     if ($rs !== false) {
                         $row = mysql_fetch_array($rs);
@@ -1392,10 +1442,10 @@
                             $lp_view_id = $row["id"];
                         } else {
                             // There is no lp_view id, first access. Adding it.
-                            $sql = "insert into ".tableName($course_code,'lp_view')." (lp_id, user_id, view_count) values (".$lp_id.",".$user_id.", 1)";
+                            $sql = "insert into ".tableName($course_code,'lp_view')." (c_id, lp_id, user_id, view_count) values ($cid, ".$lp_id.",".$user_id.", 1)";
                             $rs = mysql_query($sql,$conn);
                             // Get inserted id
-                            $sql = "select id from ".tableName($course_code,'lp_view')." where user_id=" . $user_id ." and lp_id=" . $lp_id;
+                            $sql = "select id from ".tableName($course_code,'lp_view')." where c_id = $cid AND user_id=" . $user_id ." and lp_id=" . $lp_id;
                             $rs = mysql_query($sql,$conn);
                             if ($rs !== false) {
                                 $row = mysql_fetch_array($rs);
@@ -1405,7 +1455,7 @@
                             }
                         }
                         // Look for rows on lp_item_view table.
-                        $sql = "select id,start_time from ".tableName($course_code,'lp_item_view')." where lp_view_id=".$lp_view_id." and lp_item_id=" . $lp_item_id;
+                        $sql = "select id,start_time from ".tableName($course_code,'lp_item_view')." where c_id = $cid AND lp_view_id=".$lp_view_id." and lp_item_id=" . $lp_item_id;
                         $rs = mysql_query($sql,$conn);
                         $row = mysql_fetch_array($rs);
 
@@ -1415,11 +1465,11 @@
                             if ( $row["start_time"] == 0 ) {
                                 $start_time= ", start_time=" . time();
                             }
-                            $sql = "update ".tableName($course_code,'lp_item_view')." set status='completed' " . $start_time . " where lp_view_id=".$lp_view_id." and lp_item_id=" . $lp_item_id;
+                            $sql = "update ".tableName($course_code,'lp_item_view')." set status='completed' " . $start_time . " where c_id = $cid AND lp_view_id=".$lp_view_id." and lp_item_id=" . $lp_item_id;
                             $rs = mysql_query($sql,$conn);
                         } else {
                             // There is no row, insert it.
-                            $sql = "insert into ".tableName($course_code,'lp_item_view')." (lp_item_id, lp_view_id, view_count, start_time, status, score, suspend_data) values (".$lp_item_id.", ".$lp_view_id.", 1,".time().", 'completed',0, '')";
+                            $sql = "insert into ".tableName($course_code,'lp_item_view')." (c_id, lp_item_id, lp_view_id, view_count, start_time, status, score, suspend_data) values ($cid, ".$lp_item_id.", ".$lp_view_id.", 1,".time().", 'completed',0, '')";
                             $rs = mysql_query($sql,$conn);
                         }
                     }
@@ -1438,7 +1488,10 @@
             global $db_prefix;
             global $user_id;
             global $db_stats_database;
+
             if (IsUserAllowed($course_code)) {
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
                 // Init vars
                 $weighting = 0;
                 $result = 0;
@@ -1515,13 +1568,15 @@
             $Answers = array();
             $QuestionAndAnswers = array();
             if (IsUserAllowed($course_code)) {
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
                 // First of all we need questions.
                 $Questions = self::getQuestions($course_code, $quiz_id);
                 
                 foreach ($Questions as $Question) {
                     // Now for each question... Look for answers.
                     $tmpAnswers = array();
-                    $sql = "select qa.* from  ".tableName($course_code,'quiz')." q, ".tableName($course_code,'quiz_question')." qq, ".tableName($course_code,'quiz_rel_question')." qrq,  ".tableName($course_code,'quiz_answer')." qa where qrq.question_id = qq.id and qrq.exercice_id=q.id and qa.question_id=qq.id and qq.id=". $Question->id ." and q.id= " . $quiz_id ." order by qa.question_id, qa.position";
+                    $sql = "select qa.* from  ".tableName($course_code,'quiz')." q, ".tableName($course_code,'quiz_question')." qq, ".tableName($course_code,'quiz_rel_question')." qrq,  ".tableName($course_code,'quiz_answer')." qa where q.c_id = $cid AND qrq.question_id = qq.id and qrq.exercice_id=q.id and qa.question_id=qq.id and qq.id=". $Question->id ." and q.id= " . $quiz_id ." order by qa.question_id, qa.position";
                     mysql_select_db(databaseName($course_code));
                     $rs = mysql_query($sql,$conn);
                     if ($rs !== false) {
@@ -1553,13 +1608,15 @@
             $Answers = array();
             $QuestionAndAnswers = array();
             if (IsUserAllowed($course_code)) {
+                $c_info = api_get_course_info($course_code);
+                $cid = $c_info['real_id'];
                 // First of all we need questions.
                 $Questions = self::getQuestionsExercices ($course_code, $quiz_id);
                 
                 foreach ($Questions as $Question) {
                     // Now for each question... Look for answers.
                     $tmpAnswers = array();
-                    $sql = "select qa.* from  ".tableName($course_code,'quiz')." q, ".tableName($course_code,'quiz_question')." qq, ".tableName($course_code,'quiz_rel_question')." qrq,  ".tableName($course_code,'quiz_answer')." qa where  qrq.question_id = qq.id and qrq.exercice_id=q.id and qa.question_id=qq.id and qq.id=". $Question->id ." order by qa.question_id, qa.position";
+                    $sql = "select qa.* from  ".tableName($course_code,'quiz')." q, ".tableName($course_code,'quiz_question')." qq, ".tableName($course_code,'quiz_rel_question')." qrq,  ".tableName($course_code,'quiz_answer')." qa where q.c_id = $cid AND qrq.question_id = qq.id and qrq.exercice_id=q.id and qa.question_id=qq.id and qq.id=". $Question->id ." order by qa.question_id, qa.position";
                     
                     mysql_select_db(databaseName($course_code));
                     $rs = mysql_query($sql,$conn);
@@ -1628,16 +1685,18 @@
         global $conn;
         global $db_prefix;
         global $user_id;
+        $c_info = api_get_course_info($course_code);
+        $cid = $c_info['real_id'];
 
         // Must have files on lp_view and lp_item_view tables.
-        $sql = "select id from ".tableName($course_code,'lp_view')."  where user_id=" . $user_id ." and lp_id=" . $id;
+        $sql = "select id from ".tableName($course_code,'lp_view')."  where c_id = $cid AND user_id=" . $user_id ." and lp_id=" . $id;
         mysql_select_db(databaseName($course_code));
         $rs = mysql_query($sql,$conn);
         if ($rs !== false) {
             $row = mysql_fetch_array($rs);
             if (mysql_num_rows($rs) > 0) {
                 $lp_view_id = $row["id"];
-                $sql = "select id,suspend_data from ".tableName($course_code,'lp_item_view')."  where lp_view_id=".$lp_view_id." and lp_item_id=" . $id;
+                $sql = "select id,suspend_data from ".tableName($course_code,'lp_item_view')."  where c_id = $cid AND lp_view_id=".$lp_view_id." and lp_item_id=" . $id;
                 $rs2 = mysql_query($sql,$conn);
                 $row2 = mysql_fetch_array($rs2);
                 if (mysql_num_rows($rs2) > 0) {
@@ -1660,9 +1719,11 @@
         global $conn;
         global $db_prefix;
         global $user_id;
-        
+        $c_info = api_get_course_info($course_code);
+        $cid = $c_info['real_id'];
+
         // First of all we need launch_data values from lp_item table
-        $sql = 'select launch_data from '.tableName($course_code,'lp_view').' where id=' . $sco_id ;
+        $sql = 'select launch_data from '.tableName($course_code,'lp_view').' where c_id = '.$cid.' AND id=' . $sco_id ;
         mysql_select_db(databaseName($course_code));
         $rs = mysql_query($sql,$conn);
         if ($rs !== false) {
@@ -1673,7 +1734,7 @@
             // Get video Key from array
             $key = GetKeyFromPagesArray ($pages_array,$id_video);
             // Get suspend_data from lp_item_view
-            $sql = "select suspend_data from ".tableName($course_code,'lp_item_view')." iv, ".tableName($course_code,'lp_view')." v where v.user_id=" . $user_id . " and v.id=iv.lp_view_id and iv.lp_item_id=" .$sco_id;
+            $sql = "select suspend_data from ".tableName($course_code,'lp_item_view')." iv, ".tableName($course_code,'lp_view')." v where v.c_id = $cid AND v.user_id=" . $user_id . " and v.c_id = iv.c_id AND v.id=iv.lp_view_id and iv.lp_item_id=" .$sco_id;
             mysql_select_db(databaseName($course_code));
             $rs = mysql_query($sql,$conn);
             $row = mysql_fetch_array($rs);
@@ -1775,4 +1836,4 @@
         }
     }
 
-    ?>
+
