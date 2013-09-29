@@ -110,7 +110,7 @@ foreach ($headers as $key=>$value) {
     }
     else
     {
-        error_log("Recursos restringido");
-        echo "Accediendo a un recurso protegido, No puedes pasar!";
+        error_log("Recurso restringido");
+        echo "Lo sentimos, está intentando acceder a un recurso protegido. No puede pasar.";
     }
     ?>
